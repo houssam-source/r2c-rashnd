@@ -6,10 +6,8 @@
   "kernel_type": "script",
   "is_private": "true",
   "enable_gpu": "true",
-  "enable_internet": "false",
-  "dataset_sources": [
-    "dark77/r2c-project"
-  ],
+  "enable_internet": "true",
+  "dataset_sources": [],
   "competition_sources": [],
   "kernel_sources": []
 }

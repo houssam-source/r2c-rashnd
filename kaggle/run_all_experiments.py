@@ -13,6 +13,7 @@ After completion: download /kaggle/working, place the CSVs into results/ on
 this machine, then run  python experiments/analyze_results.py  for the
 paper-comparison validation report and figures.
 """
+import datetime
 import glob
 import os
 import subprocess
@@ -20,6 +21,8 @@ import sys
 import time
 
 OUT = "/kaggle/working"
+KERNEL = "dark77/r2c-rashnd-experiment-suite"
+TOTAL_HOURS = 11.0
 JOBS = [
     # (description, script, args, out_csv)
     ("E3 CEN+HERO+SIDR", "experiments/run_baselines.py",
@@ -71,17 +74,24 @@ def main():
     root = find_project()
     os.makedirs(OUT, exist_ok=True)
     env = dict(os.environ, OMP_NUM_THREADS="4", MKL_NUM_THREADS="4")
-    print(f"project: {root}\noutput:  {OUT}\nstarting at job {start}", flush=True)
+    total_jobs = len(JOBS)
+    print(f"Kernel: {KERNEL}\nStarted: {datetime.datetime.now(datetime.timezone.utc).isoformat()} UTC\n"
+          f"Total jobs: {total_jobs}, estimated wall time ~{TOTAL_HOURS}h\n", flush=True)
     for i, (desc, script, args, out_csv) in enumerate(JOBS):
+        pct = i / total_jobs * 100
+        print(f"\n===== PROGRESS [{i}/{total_jobs}] {pct:.1f}% | next: {desc} =====", flush=True)
         if i < start:
+            print(f"  (skipped by --start {start})", flush=True)
             continue
         cmd = [sys.executable, "-u", os.path.join(root, script)] + args + \
               ["--out", os.path.join(OUT, out_csv)]
-        print(f"\n===== [{i}] {desc} =====", flush=True)
         t0 = time.time()
         r = subprocess.run(cmd, cwd=root, env=env)
-        print(f"----- [{i}] exit {r.returncode} in {(time.time() - t0) / 60:.1f} min", flush=True)
-    print("\nALL JOBS DONE -- download /kaggle/working and run "
+        elapsed = (time.time() - t0) / 60
+        pct_done = (i + 1) / total_jobs * 100
+        print(f"===== DONE [{i+1}/{total_jobs}] {pct_done:.1f}% | {desc} in {elapsed:.1f} min "
+              f"(exit {r.returncode}) =====", flush=True)
+    print(f"\nALL JOBS DONE ({total_jobs}/{total_jobs}) -- download /kaggle/working and run "
           "experiments/analyze_results.py locally", flush=True)
 
 

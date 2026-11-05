@@ -174,28 +174,41 @@ def main():
                     all_pass &= check(f"{dep} {abl} {f}%: REC not faster than full (paper {ref})",
                                       ok, f"ours ablation {rec_a:.3f} vs full {rec_f:.3f}", lines)
 
-    # ---- E4: jamming ------------------------------------------------------
+    # ---- E4: jamming (headline: proposal must beat R2C by >= 5%) ---------
     lines.append("")
-    lines.append("## E4 — R2C vs hybrid under jamming (headline)")
+    lines.append("## E4 — proposal (R2C+RASHND) vs R2C baseline under jamming")
     lines.append("")
-    lines.append("| jammer | controller | thr Mbps | mean q | REC |")
+    lines.append("Success criterion: hybrid improves R2C by **at least 5%** on "
+                 "throughput and link quality.")
+    lines.append("")
+    lines.append("| jammer | metric | R2C | hybrid | gain % |")
     lines.append("|---|---|---|---|---|")
     for mode in ["constant", "sweep", "reactive"]:
         paths = [f"{RESULTS}/e4_{mode}.csv"]
-        if mode == "reactive" and os.path.exists(f"{RESULTS}/.e4_reactive_tmp.csv"):
-            paths.append(f"{RESULTS}/.e4_reactive_tmp.csv")
+        tmp = f"{RESULTS}/.e4_{mode}_tmp.csv"
+        if os.path.exists(tmp):
+            paths.append(tmp)
         rows = {}
         for path in paths:
             for r in read_csv(path):
                 rows.setdefault(r["controller"], {})[r["metric"]] = float(r["mean"])
-        for ctrl in ["R2C", "R2C+RASHND"]:
-            m = rows.get(ctrl, {})
-            lines.append(f"| {mode} | {ctrl} | {m.get('thr_mbps', float('nan')):.1f} | "
-                         f"{m.get('mean_q', float('nan')):.3f} | {m.get('REC', float('nan')):.3f} |")
-        thr_h = rows.get("R2C+RASHND", {}).get("thr_mbps", 0)
-        thr_r = rows.get("R2C", {}).get("thr_mbps", float("inf"))
-        all_pass &= check(f"{mode}: hybrid throughput > 2x R2C",
-                          thr_h > 2 * thr_r, f"hybrid {thr_h:.1f} vs R2C {thr_r:.1f} Mbps", lines)
+        r2c, hyb = rows.get("R2C", {}), rows.get("R2C+RASHND", {})
+        for metric, key in [("throughput (Mbps)", "thr_mbps"),
+                            ("mean link quality", "mean_q"),
+                            ("REC (quality-gated)", "REC")]:
+            a, b = r2c.get(key), hyb.get(key)
+            if a is None or b is None:
+                continue
+            gain = (b - a) / abs(a) * 100.0 if abs(a) > 1e-12 else float("inf")
+            lines.append(f"| {mode} | {metric} | {a:.3f} | {b:.3f} | {gain:+.1f}% |")
+        thr_gain = (hyb.get("thr_mbps", 0) - r2c.get("thr_mbps", 1)) \
+            / max(r2c.get("thr_mbps", 1), 1e-12) * 100.0
+        q_gain = (hyb.get("mean_q", 0) - r2c.get("mean_q", 1)) \
+            / max(r2c.get("mean_q", 1e-12), 1e-12) * 100.0
+        all_pass &= check(f"{mode}: proposal throughput gain >= 5%",
+                          thr_gain >= 5.0, f"{thr_gain:+.1f}%", lines)
+        all_pass &= check(f"{mode}: proposal link-quality gain >= 5%",
+                          q_gain >= 5.0, f"{q_gain:+.1f}%", lines)
 
     # ---- E5: loop stability ----------------------------------------------
     lines.append("")

@@ -10,6 +10,7 @@ Serves the trained IST/Chebyshev-GCN controller:
 
 Run:  uvicorn api.main:app --reload --port 8000
 """
+import math
 import numpy as np
 import torch
 from fastapi import FastAPI, HTTPException
@@ -21,6 +22,14 @@ from r2c.environment import SwarmEnvironment
 from r2c.metrics import algebraic_connectivity
 
 app = FastAPI(title="R2C Model State API", version="0.1.0")
+
+
+def _safe_float(x):
+    try:
+        v = float(x)
+        return v if __import__("math").isfinite(v) else None
+    except Exception:
+        return None
 
 
 def _adjacency(pos: np.ndarray, active: np.ndarray, r_c: float) -> np.ndarray:
@@ -41,15 +50,17 @@ class ServiceState:
     def param_stats(self):
         rows = []
         for name, t in self.controller.ist.model.named_parameters():
-            g = t.grad
+            t = t.detach().cpu()
+            g = t.grad.detach().cpu() if t.grad is not None else None
+            std = float(t.std()) if t.numel() > 1 else 0.0
             rows.append({
                 "name": name,
                 "shape": list(t.shape),
                 "numel": t.numel(),
-                "norm": float(t.norm()),
-                "mean": float(t.mean()),
-                "std": float(t.std()),
-                "grad_norm": float(g.norm()) if g is not None else None,
+                "norm": _safe_float(t.norm()),
+                "mean": _safe_float(t.mean()),
+                "std": _safe_float(std),
+                "grad_norm": _safe_float(g.norm()) if g is not None else None,
             })
         return rows
 

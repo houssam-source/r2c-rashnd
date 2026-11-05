@@ -89,14 +89,44 @@ def health():
 @app.get("/kaggle/status")
 def kaggle_status():
     progress_path = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "build", "kaggle_progress.txt")
-    progress_line = None
+    progress_line = "progress file not yet available"
+    pct = None
+    elapsed_h = None
+    remaining_h = None
+    state = "UNKNOWN"
+    bar = ""
     try:
         with open(progress_path) as f:
             progress_line = f.read().strip()
+        if "%" in progress_line:
+            parts = progress_line.split()
+            for i, p in enumerate(parts):
+                if p.endswith("%"):
+                    pct = float(p.rstrip("%"))
+                if p == "elapsed" and i + 1 < len(parts):
+                    try:
+                        elapsed_h = float(parts[i + 1].rstrip("h"))
+                    except Exception:
+                        pass
+                if p == "remaining" and i + 1 < len(parts):
+                    try:
+                        remaining_h = float(parts[i + 1].lstrip("~").rstrip("h"))
+                    except Exception:
+                        pass
+                if p.startswith("state="):
+                    state = p.split("=", 1)[1]
+        if pct is not None:
+            filled = int(40 * pct / 100)
+            bar = "#" * filled + "-" * (40 - filled)
     except Exception:
-        progress_line = "progress file not yet available"
+        pass
     return {
         "kernel": "dark77/r2c-rashnd-experiment-suite",
+        "state": state,
+        "percent": pct,
+        "elapsed_hours": elapsed_h,
+        "remaining_hours": remaining_h,
+        "progress_bar": bar,
         "progress_line": progress_line,
         "progress_file": progress_path,
     }

@@ -71,6 +71,12 @@ def find_project():
 
 def main():
     start = int(sys.argv[sys.argv.index("--start") + 1]) if "--start" in sys.argv else 0
+    # Auto-resume from a previous Kaggle session if a checkpoint exists.
+    resume_file = os.path.join(OUT, "resume_index.txt")
+    if os.path.exists(resume_file):
+        auto = int(open(resume_file).read().strip())
+        start = max(start, auto)
+        print(f"Auto-resuming from previous session at job index {start}", flush=True)
     root = find_project()
     os.makedirs(OUT, exist_ok=True)
     env = dict(os.environ, OMP_NUM_THREADS="4", MKL_NUM_THREADS="4")
@@ -91,6 +97,8 @@ def main():
         pct_done = (i + 1) / total_jobs * 100
         print(f"===== DONE [{i+1}/{total_jobs}] {pct_done:.1f}% | {desc} in {elapsed:.1f} min "
               f"(exit {r.returncode}) =====", flush=True)
+        with open(resume_file, "w") as f:
+            f.write(str(i + 1))
     print(f"\nALL JOBS DONE ({total_jobs}/{total_jobs}) -- download /kaggle/working and run "
           "experiments/analyze_results.py locally", flush=True)
 

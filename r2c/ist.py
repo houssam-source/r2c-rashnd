@@ -34,7 +34,7 @@ def _normalized_laplacian(adj: np.ndarray) -> torch.Tensor:
     a = torch.tensor(adj, dtype=torch.float32)
     deg = a.sum(1)
     dinv = torch.diag(torch.pow(torch.maximum(deg, torch.tensor(1e-12)), -0.5))
-    return torch.eye(len(a)) - dinv @ a @ dinv
+    return torch.eye(len(a), device=a.device) - dinv @ a @ dinv
 
 
 class FirstOrderChebLayer(nn.Module):
@@ -45,7 +45,7 @@ class FirstOrderChebLayer(nn.Module):
         self.bias = nn.Parameter(torch.zeros(out_dim))
 
     def forward(self, x: torch.Tensor, lnorm: torch.Tensor) -> torch.Tensor:
-        support = torch.eye(len(x)) - self.eps * lnorm
+        support = torch.eye(len(x), device=x.device) - self.eps * lnorm
         return support @ x @ self.weight + self.bias
 
 

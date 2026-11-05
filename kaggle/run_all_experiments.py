@@ -57,19 +57,13 @@ JOBS = [
 
 
 def find_project():
-    hits = []
-    for base in ["/kaggle/input", os.getcwd(), os.path.dirname(os.getcwd())]:
-        for root, dirs, files in os.walk(base):
-            dirs[:] = [d for d in dirs if d != "__pycache__"]
-            depth = root.count(os.sep)
-            if depth > 8:
-                dirs[:] = []
-            if "__init__.py" in files and root.endswith("r2c"):
-                hits.append(os.path.dirname(root))
-    print("project candidates:", hits, flush=True)
-    if hits:
-        return hits[0]
-    raise SystemExit("r2c package not found -- attach the r2c project dataset")
+    """Clone the project from GitHub (internet enabled) -- no dataset needed."""
+    dest = os.path.join(OUT, "r2c-rashnd")
+    if not os.path.exists(os.path.join(dest, "r2c", "__init__.py")):
+        subprocess.run(["git", "clone", "--depth", "1",
+                        "https://github.com/houssam-source/r2c-rashnd.git", dest],
+                       check=True)
+    return dest
 
 
 def main():

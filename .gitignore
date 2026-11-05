@@ -1,0 +1,8 @@
+__pycache__/
+*.pyc
+results/
+build/
+external_data/
+kaggle/r2c_project.zip
+.kaggle/
+api/__pycache__/

@@ -11,6 +11,7 @@ Serves the trained IST/Chebyshev-GCN controller:
 Run:  uvicorn api.main:app --reload --port 8000
 """
 import math
+import os
 import numpy as np
 import torch
 from fastapi import FastAPI, HTTPException
@@ -83,6 +84,22 @@ class ResetRequest(BaseModel):
 @app.get("/health")
 def health():
     return {"status": "ok", "t": state.env.t if state.env else None}
+
+
+@app.get("/kaggle/status")
+def kaggle_status():
+    progress_path = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "build", "kaggle_progress.txt")
+    progress_line = None
+    try:
+        with open(progress_path) as f:
+            progress_line = f.read().strip()
+    except Exception:
+        progress_line = "progress file not yet available"
+    return {
+        "kernel": "dark77/r2c-rashnd-experiment-suite",
+        "progress_line": progress_line,
+        "progress_file": progress_path,
+    }
 
 
 @app.get("/model")

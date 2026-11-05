@@ -94,7 +94,6 @@ def kaggle_status():
     elapsed_h = None
     remaining_h = None
     state = "UNKNOWN"
-    bar = ""
     try:
         with open(progress_path) as f:
             progress_line = f.read().strip()
@@ -115,18 +114,57 @@ def kaggle_status():
                         pass
                 if p.startswith("state="):
                     state = p.split("=", 1)[1]
-        if pct is not None:
-            filled = int(40 * pct / 100)
-            bar = "#" * filled + "-" * (40 - filled)
     except Exception:
         pass
+    # Actual job progress from the live Kaggle log stream (if available).
+    job_pct = None
+    job_done = None
+    job_total = 13
+    current_job = None
+    try:
+        log_path = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "build", "kaggle_live.log")
+        with open(log_path) as f:
+            for line in f:
+                line = line.strip()
+                if line.startswith("===== DONE ["):
+                    # ===== DONE [i+1/13] pct% | desc ... =====
+                    inner = line.split("]", 1)[0].split("[", 1)[1]
+                    job_done, _ = inner.split("/")
+                    job_done = int(job_done)
+                    job_pct = job_done / job_total * 100
+                    if "|" in line:
+                        desc = line.split("|", 2)[1].strip().rstrip("=").strip()
+                        current_job = "completed: " + desc
+                elif line.startswith("===== PROGRESS ["):
+                    # ===== PROGRESS [i/13] pct% | next: desc =====
+                    inner = line.split("]", 1)[0].split("[", 1)[1]
+                    _, total = inner.split("/")
+                    job_total = int(total)
+                    if job_done is None:
+                        job_done = int(_.strip())
+                        job_pct = job_done / job_total * 100
+                    if "|" in line:
+                        current_job = line.split("|", 2)[1].strip().rstrip("=").strip()
+    except Exception:
+        pass
+
+    # Prefer actual job progress; fall back to time-based estimate.
+    display_pct = job_pct if job_pct is not None else pct
+    display_bar = ""
+    if display_pct is not None:
+        filled = int(40 * display_pct / 100)
+        display_bar = "#" * filled + "-" * (40 - filled)
+
     return {
         "kernel": "dark77/r2c-rashnd-experiment-suite",
         "state": state,
-        "percent": pct,
+        "percent": display_pct,
+        "job_done": job_done,
+        "job_total": job_total,
+        "current_job": current_job,
         "elapsed_hours": elapsed_h,
         "remaining_hours": remaining_h,
-        "progress_bar": bar,
+        "progress_bar": display_bar,
         "progress_line": progress_line,
         "progress_file": progress_path,
     }

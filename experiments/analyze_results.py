@@ -102,7 +102,11 @@ def main():
     e3 = {}
     for path in glob.glob(f"{RESULTS}/e3_*.csv"):
         for r in read_csv(path):
-            e3.setdefault(r["controller"], {})[r["metric"]] = float(r["mean"])
+            try:
+                mean = float(r["mean"])
+            except ValueError:
+                continue  # skip non-scalar rows (e.g. the CDD vector)
+            e3.setdefault(r["controller"], {})[r["metric"]] = mean
     ours_r2c_avg_rec = sum(ran[f].get("REC", (1,))[0] for f in FAILS) / 4
     ours_best_rec = ours_r2c_avg_rec
     ours_best_cov = sum(ran[f].get("COV", (0,))[0] for f in FAILS) / 4

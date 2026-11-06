@@ -38,7 +38,10 @@ class HybridController(R2CController):
                  rf_p: RFParams | None = None, use_awf: bool = True,
                  repel_gain: float = 0.4, contrast_ref: float = 0.5,
                  use_geo_ist: bool = True, harm_gate: bool = True,
-                 compress: float = 0.6):
+                 compress: float = 0.6,
+                 variant: str = "v2",
+                 gamma: float = 0.5, conf_min: float = 0.3,
+                 age_max: int = 100, p_block: float = 1.0):
         super().__init__(p, use_ist=True, use_awf=use_awf)
         self.rf = rf if rf is not None else RFLayer(p, rf_p or RFParams())
         self.repel_gain = repel_gain
@@ -50,6 +53,140 @@ class HybridController(R2CController):
         # when the swarm is jammed, tighten intra-cluster spacing to this
         # fraction of r_c (strong short links beat the jammer); None disables
         self.compress = compress
+        # --- v3: search-guided belief dissemination -------------------------
+        # v2: per-cluster divided sensing, standard bridging (baseline)
+        # v3a: A* bridging order + belief-penalized costs, v2 flooding beliefs
+        # v3b: v2 bridging order, beliefs carried by the search
+        # v3:  both (spec §6 ablation matrix)
+        assert variant in ("v2", "v3a", "v3b", "v3")
+        self.variant = variant
+        self.gamma = gamma
+        self.p_block = p_block
+        self.counters = {"sensing_events": 0, "replans": 0}
+        self._last_path = None
+        if variant in ("v3", "v3b", "v3a"):
+            from .search import BeliefStore
+            self.beliefs = BeliefStore(contrast_ref, conf_min, age_max,
+                                       self.counters)
+        else:
+            self.beliefs = None
+
+    # ---- v3 planning (runs at each IST invocation) -------------------------
+    def _v3_plan(self, env, t: int):
+        """A* over the cluster graph with belief-carrying expansion.
+
+        Returns the IST adjacency override for this invocation and updates
+        the belief store (origin sensing + on_open adoption + staleness).
+        """
+        from .search import (CorridorGraph, astar, belief_power_at,
+                             build_planned_adj, norm_power)
+        pos, active, p = env.pos, env.active, self.p
+        adj = ((env.distances() <= p.r_c) & active[:, None]
+               & active[None, :]).astype(float)
+        np.fill_diagonal(adj, 0.0)
+        _, labels = scipy.sparse.csgraph.connected_components(adj,
+                                                              directed=False)
+        graph = CorridorGraph(self.ist, pos, active, labels)
+        self.beliefs.age_step()
+        self.beliefs.demote_stale()
+        pw = self.rf.sensed_jammer_power(pos, active, t)
+
+        clusters = list(graph.parts)
+        if len(clusters) < 2:
+            # nothing to bridge: geometric intra-part graph only
+            qadj = adj.astype(float)
+            return qadj
+
+        # --- sensing origin: highest jammed-SINR exposure --------------------
+        noise = 10.0 ** (self.rf.rf.noise_dbm / 10.0)
+        gate = 10.0 ** (self.rf.rf.sinr_req_db / 10.0) * noise
+
+        def exposure(k):
+            m = pw[graph.parts[k]].mean()
+            return m / gate
+
+        origin = max(clusters, key=exposure)
+        v3_beliefs = self.variant in ("v3", "v3b")
+        if v3_beliefs:
+            self.beliefs.measure(self.beliefs.key(graph.parts[origin]), pos,
+                                 pw, graph.parts[origin])
+
+        # --- on_open adoption callback (v3/v3b) ------------------------------
+        def on_open(k, path):
+            if not v3_beliefs:
+                return
+            key = self.beliefs.key(graph.parts[k])
+            if k == origin:
+                return
+            # propagated belief: power-weighted centroid of accumulated path
+            # samples; confidence = min contrast along path; age = path hops
+            vecs, confs = [], []
+            for node in path:
+                b = self.beliefs.get(self.beliefs.key(graph.parts[node]))
+                if b is not None and b["vec"] is not None:
+                    vecs.append(b["vec"])
+                    confs.append(b["conf"])
+            if vecs:
+                conf = min(confs) if confs else 0.0
+                age = len(path)
+                # weight by confidence; fall back to origin belief
+                w = np.array(confs) + 1e-9
+                vec = np.average(np.vstack(vecs), axis=0, weights=w)
+                self.beliefs.adopt(key, vec, conf, age)
+                if self.beliefs.get(key)["conf"] == 0.0:
+                    # safety valve: low propagated confidence -> local re-sense
+                    self.beliefs.measure(key, pos, pw, graph.parts[k])
+            else:
+                self.beliefs.measure(key, pos, pw, graph.parts[k])
+
+        # --- costs ------------------------------------------------------------
+        def corridor_power(k, m):
+            """Believed jammer power at the corridor midpoint."""
+            if v3_beliefs:
+                b = self.beliefs.get(self.beliefs.key(graph.parts[k]))
+                if b is None or b["vec"] is None:
+                    return 0.0
+                mid = 0.5 * (graph.centroid[k] + graph.centroid[m])
+                return belief_power_at(self.rf, b["vec"], mid)
+            # v3a: beliefs flood locally per cluster (v2 style) — use the
+            # sensing origin's belief for corridor penalization
+            b = self.beliefs.get(self.beliefs.key(graph.parts[origin]))
+            if b is None or b["vec"] is None:
+                return 0.0
+            mid = 0.5 * (graph.centroid[k] + graph.centroid[m])
+            return belief_power_at(self.rf, b["vec"], mid)
+
+        def g_cost(k, m, length):
+            pen = 1.0 + self.gamma * norm_power(self.rf, corridor_power(k, m))
+            return length / p.v_max * pen
+
+        def h(k):
+            if graph.largest is None:
+                return 0.0
+            return float(np.linalg.norm(graph.centroid[k]
+                                        - graph.centroid[graph.largest])
+                         / p.v_max)
+
+        edges, closed = astar(origin, graph, g_cost, h, on_open=on_open)
+        # re-plan frequency metric
+        sig = tuple(edges) if edges else None
+        if sig != self._last_path:
+            self.counters["replans"] += 1
+            self._last_path = sig
+
+        if self.variant in ("v2", "v3b") or edges is None:
+            # standard bridging: all corridors at once
+            return build_planned_adj(self.ist, pos, active, labels, graph,
+                                     [(a, b) for a in clusters
+                                      for b, _ in graph.edges[a] if a < b])
+        # v3a/v3: bridge the A* path's passable corridors this invocation
+        # (closed order; blocked corridors skipped via re-plan next call)
+        passable = [(a, b) for a, b in edges
+                    if norm_power(self.rf, corridor_power(a, b)) < self.p_block]
+        if passable:
+            return build_planned_adj(self.ist, pos, active, labels,
+                                     graph, passable)
+        return adj.astype(float)   # all corridors believed blocked
 
     def _jammed(self, env, t: int) -> bool:
         pw = self.rf.sensed_jammer_power(env.pos, env.active, t)
@@ -87,12 +224,25 @@ class HybridController(R2CController):
                 continue
             if self.harm_gate and (P.mean() / noise_mw) >= sinr_req_lin:
                 continue  # jammer harmless here: no evasion
-            belief = (P @ pos[idx]) / Psum
+            # belief: v3 variants use the store (adopted beliefs, same
+            # vintage across clusters); v2/v3a measure locally per cluster
+            if self.beliefs is not None:
+                b = self.beliefs.get(self.beliefs.key(idx))
+                if b is None or b["vec"] is None or b["conf"] <= 0:
+                    b = self.beliefs.measure(self.beliefs.key(idx), pos, pw,
+                                             idx)
+                if b["vec"] is None:
+                    continue
+                belief, conf = b["vec"], b["conf"]
+            else:
+                belief = (P @ pos[idx]) / Psum
+                contrast = (P.max() - P.min()) / (P.mean() + 1e-12)
+                conf = float(np.clip(contrast / self.contrast_ref, 0.0, 1.0))
+                if hasattr(self, "counters"):
+                    self.counters["sensing_events"] += 1   # v2 local sensing
             ctr = pos[idx].mean(axis=0)
             away = ctr - belief
             n = np.linalg.norm(away)
-            contrast = (P.max() - P.min()) / (P.mean() + 1e-12)
-            conf = float(np.clip(contrast / self.contrast_ref, 0.0, 1.0))
             if n > 1e-9 and conf > 0:
                 out[idx] = away / n * conf
         return out
@@ -110,14 +260,18 @@ class HybridController(R2CController):
         d_repel = self._cluster_repulsion(env, t)
 
         d_ist = np.zeros_like(d_ise)
-        if self.use_geo_ist:
-            dist = env.distances()
-            qadj = ((dist <= p.r_c) & env.active[:, None]
-                    & env.active[None, :]).astype(float)
-            np.fill_diagonal(qadj, 0.0)
-        else:
-            qadj = self.rf.quality_weighted_adjacency(env.pos, env.active, t)
         if t % p.T_ist == 0:
+            if self.variant == "v2":
+                if self.use_geo_ist:
+                    dist = env.distances()
+                    qadj = ((dist <= p.r_c) & env.active[:, None]
+                            & env.active[None, :]).astype(float)
+                    np.fill_diagonal(qadj, 0.0)
+                else:
+                    qadj = self.rf.quality_weighted_adjacency(
+                        env.pos, env.active, t)
+            else:
+                qadj = self._v3_plan(env, t)
             self.ist.train_step(env.pos, env.active, adj_override=qadj)
             self.last_ist = self.ist.translation(env.pos, env.active,
                                                  adj_override=qadj)

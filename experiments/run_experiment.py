@@ -16,28 +16,43 @@ sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 from r2c.config import R2CParams
 from r2c.metrics import run_metrics
 
+KEYS = ["REC", "COV", "COV_final", "AND", "lambda2_final", "recovered"]
 
-def checkpointed_run(p, fr, dep, trials, ablation, ckpt_path):
+
+def _one_trial(args):
+    """Worker: run a single trial; must be top-level for multiprocessing."""
+    d, fr, dep, ablation, i = args
+    pi = R2CParams(**{**d, "seed": d["seed"] + i})
+    r = run_metrics(pi, fr, dep, trials=1, ablation=ablation)
+    return {k: r[k][0] for k in KEYS}
+
+
+def checkpointed_run(p, fr, dep, trials, ablation, ckpt_path, workers=1):
     """run_metrics equivalent that saves per-trial results to a JSON file
     after every trial so a killed run can resume exactly. Numerically
-    identical to run_metrics(p, fr, dep, trials, ablation)."""
-    keys = ["REC", "COV", "COV_final", "AND", "lambda2_final", "recovered"]
+    identical to run_metrics(p, fr, dep, trials, ablation). Trials run in
+    parallel when workers > 1 (each trial has its own seed, so results are
+    identical to the serial loop)."""
+    from experiments._parallel import map_trials
+
     ckpt = {}
     if os.path.exists(ckpt_path):
         with open(ckpt_path) as f:
             ckpt = json.load(f)
-    for i in range(trials):
-        if str(i) in ckpt:
-            continue
-        pi = R2CParams(**{**p.__dict__, "seed": p.seed + i})
-        r = run_metrics(pi, fr, dep, trials=1, ablation=ablation)
-        ckpt[str(i)] = {k: r[k][0] for k in keys}
+    base = dict(p.__dict__)
+    tasks = [(base, fr, dep, ablation, i)
+             for i in range(trials) if str(i) not in ckpt]
+
+    def on_result(i, result):
+        ckpt[str(i)] = result
         tmp = ckpt_path + ".tmp"
         with open(tmp, "w") as f:
             json.dump(ckpt, f)
         os.replace(tmp, ckpt_path)
+
+    map_trials(_one_trial, tasks, workers, on_result)
     out = {}
-    for k in keys:
+    for k in KEYS:
         a = np.array([ckpt[str(i)][k] for i in range(trials)])
         out[k] = (float(a.mean()), float(a.std()))
     out["CDD_example"] = np.float64(0.0)
@@ -57,6 +72,9 @@ def main():
     ap.add_argument("--checkpoint", default=None,
                     help="optional JSON path for per-trial resume; identical "
                          "results to the default non-checkpointed run")
+    ap.add_argument("--workers", type=int, default=1,
+                    help="parallel trial processes (1 = serial; results are "
+                         "identical either way since every trial is seeded)")
     args = ap.parse_args()
 
     p = R2CParams()
@@ -73,7 +91,8 @@ def main():
                     ckpt_path = args.checkpoint.replace(
                         "{fr}", str(int(fr))).replace("{dep}", dep)
                     r = checkpointed_run(p, fr / 100.0, dep, args.trials,
-                                         args.ablation, ckpt_path)
+                                         args.ablation, ckpt_path,
+                                         workers=args.workers)
                 else:
                     r = run_metrics(p, fr / 100.0, dep, trials=args.trials,
                                     ablation=args.ablation)

@@ -77,10 +77,31 @@ class ChebNet(nn.Module):
 class IST:
     def __init__(self, p: R2CParams):
         self.p = p
+        # seed torch so the GCN init (and hence every metric) is reproducible
+        torch.manual_seed(p.seed)
         self.device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
         self.model = ChebNet(p).to(self.device)
         self.opt = torch.optim.Adam(self.model.parameters(), lr=p.lr)
         self.top_m = getattr(p, "top_m", 3)
+        # graph cache: train_step() and the translation() call that always
+        # follows it in the controllers use identical (pos, active[, adj]).
+        self._graph_key = None
+        self._graph = None
+
+    def _graph_parts(self, pos: np.ndarray, active: np.ndarray,
+                     adj_override: np.ndarray | None):
+        if adj_override is not None:
+            key = (pos.tobytes(), active.tobytes(), adj_override.tobytes())
+        else:
+            key = (pos.tobytes(), active.tobytes())
+        if self._graph_key != key:
+            labels = self._parts(pos, active)
+            adj = adj_override if adj_override is not None \
+                else self._multipartite(pos, active, labels)
+            lnorm = _normalized_laplacian(adj)
+            self._graph = (labels, lnorm)
+            self._graph_key = key
+        return self._graph
 
     # ---- graphs -----------------------------------------------------------
 
@@ -176,10 +197,9 @@ class IST:
         dev = self.device
         pos_t = torch.tensor(pos, dtype=torch.float32, device=dev)
         act_t = torch.tensor(active, dtype=torch.float32, device=dev)
-        labels = self._parts(pos, active)
+        labels, lnorm = self._graph_parts(pos, active, adj_override)
         n_parts = len(set(labels[active]))
-        lnorm = _normalized_laplacian(adj_override if adj_override is not None
-                                      else self._multipartite(pos, active, labels)).to(dev)
+        lnorm = lnorm.to(dev)
         x = self._features(pos, active).to(dev)
         loss = None
         for _ in range(epochs):
@@ -200,10 +220,9 @@ class IST:
         """Per-node unit translation directions (one delta per subnetwork)."""
         self.model.eval()
         dev = self.device
-        labels = self._parts(pos, active)
+        labels, lnorm = self._graph_parts(pos, active, adj_override)
         n_parts = len(set(labels[active]))
-        lnorm = _normalized_laplacian(adj_override if adj_override is not None
-                                      else self._multipartite(pos, active, labels)).to(dev)
+        lnorm = lnorm.to(dev)
         with torch.no_grad():
             deltas = self.model(self._features(pos, active).to(dev), lnorm,
                                 torch.tensor(labels, device=dev), n_parts)

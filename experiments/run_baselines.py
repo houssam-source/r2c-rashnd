@@ -18,6 +18,14 @@ from r2c.controller import R2CController
 from r2c.metrics import run_trial
 
 
+def _one_trial(args):
+    """Worker: run a single trial; must be top-level for multiprocessing."""
+    d, failure, deployment, name, seed_offset, i = args
+    pi = R2CParams(**{**d, "seed": d["seed"] + seed_offset + i})
+    ctrl = R2CController(pi) if name == "R2C" else BASELINES[name](pi)
+    return run_trial(pi, failure, deployment, ctrl)
+
+
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--trials", type=int, default=10)
@@ -29,7 +37,12 @@ def main():
     ap.add_argument("--out", default="results/baselines.csv")
     ap.add_argument("--seed-offset", type=int, default=0,
                     help="offset added to the base seed for each trial index")
+    ap.add_argument("--workers", type=int, default=1,
+                    help="parallel trial processes (1 = serial; results are "
+                         "identical either way since every trial is seeded)")
     args = ap.parse_args()
+
+    from experiments._parallel import map_trials
 
     p = R2CParams()
     os.makedirs(os.path.dirname(args.out), exist_ok=True)
@@ -40,12 +53,12 @@ def main():
             w.writerow(["controller", "failure_pct", "metric", "mean", "std",
                         "trials"])
         for name in args.controllers:
-            rows = []
-            for i in range(args.trials):
-                pi = R2CParams(**{**p.__dict__, "seed": p.seed + args.seed_offset + i})
-                ctrl = (R2CController(pi) if name == "R2C"
-                        else BASELINES[name](pi))
-                rows.append(run_trial(pi, args.failure, args.deployment, ctrl))
+            base = dict(p.__dict__)
+            tasks = [(base, args.failure, args.deployment, name,
+                      args.seed_offset, i) for i in range(args.trials)]
+            rows = [None] * args.trials
+            map_trials(_one_trial, tasks, args.workers,
+                       lambda i, r: rows.__setitem__(i, r))
             print(f"[{name} | {args.deployment} | failure {args.failure:.0%}]")
             for k in ["REC", "COV", "AND", "lambda2_final", "recovered"]:
                 a = np.array([r[k] for r in rows])

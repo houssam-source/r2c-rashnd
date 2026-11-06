@@ -55,6 +55,15 @@ def run_jamming_trial(p: R2CParams, rf_p: RFParams, failure_ratio: float,
     }
 
 
+def _one_trial(args):
+    """Worker: run a single trial; must be top-level for multiprocessing."""
+    d, rf_d, failure, mode, seed_offset, hybrid, i = args
+    pi = R2CParams(**{**d, "seed": d["seed"] + seed_offset + i})
+    ri = RFParams(**{**rf_d, "jammer_mode": mode,
+                     "seed": d["seed"] + seed_offset + i})
+    return run_jamming_trial(pi, ri, failure, "random", hybrid)
+
+
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--trials", type=int, default=10)
@@ -65,7 +74,12 @@ def main():
     ap.add_argument("--modes", nargs="+",
                     default=["constant", "sweep", "reactive"])
     ap.add_argument("--out", default="results/e4.csv")
+    ap.add_argument("--workers", type=int, default=1,
+                    help="parallel trial processes (1 = serial; results are "
+                         "identical either way since every trial is seeded)")
     args = ap.parse_args()
+
+    from experiments._parallel import map_trials
 
     p = R2CParams()
     os.makedirs(os.path.dirname(args.out), exist_ok=True)
@@ -77,14 +91,14 @@ def main():
         for mode in args.modes:
             for hybrid in [False, True]:
                 name = "R2C+RASHND" if hybrid else "R2C"
-                rows = []
-                for i in range(args.trials):
-                    pi = R2CParams(**{**p.__dict__,
-                                      "seed": p.seed + args.seed_offset + i})
-                    ri = RFParams(jammer_mode=mode,
-                                  seed=p.seed + args.seed_offset + i)
-                    rows.append(run_jamming_trial(pi, ri, args.failures,
-                                                  "random", hybrid))
+                base = dict(p.__dict__)
+                rf_d = dict(RFParams().__dict__)
+                tasks = [
+                    (base, rf_d, args.failures, mode, args.seed_offset,
+                     hybrid, i) for i in range(args.trials)]
+                rows = [None] * args.trials
+                map_trials(_one_trial, tasks, args.workers,
+                           lambda i, r: rows.__setitem__(i, r))
                 print(f"[jammer={mode} | {name}]")
                 for k in rows[0]:
                     a = np.array([r[k] for r in rows])

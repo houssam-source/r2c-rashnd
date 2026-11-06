@@ -108,6 +108,33 @@ class RFLayer:
             return self.jammer_pos
         raise ValueError(rf.jammer_mode)
 
+    def _jammer_position_peek(self, t: int, swarm_pos: np.ndarray,
+                              active: np.ndarray) -> np.ndarray:
+        """Jammer position as observable this step WITHOUT consuming a move
+        (non-mutating; safe to call any number of times per step)."""
+        rf, p = self.rf, self.p
+        if rf.jammer_mode == "constant":
+            return self.jammer_pos
+        if rf.jammer_mode == "sweep":
+            x = p.area * (0.5 + 0.4 * np.sin(2.0 * np.pi * t / rf.sweep_period))
+            return np.array([x, p.area / 2.0])
+        if rf.jammer_mode == "reactive":
+            tgt = swarm_pos[active].mean(axis=0) if active.any() else self.jammer_pos
+            d = tgt - self.jammer_pos
+            n = np.linalg.norm(d)
+            if n > 1e-9:
+                return self.jammer_pos + d / n * min(rf.jammer_speed, n)
+            return self.jammer_pos
+        raise ValueError(rf.jammer_mode)
+
+    def sensed_jammer_power(self, pos: np.ndarray, active: np.ndarray,
+                            t: int) -> np.ndarray:
+        """Per-node received jammer power [mW] at the observable jammer
+        position — the raw local sensing sample each node contributes to its
+        cluster's shared belief (non-mutating)."""
+        jp = self._jammer_position_peek(t, pos, active)
+        return self._rx_mw(jp, pos, self.rf.jammer_power_dbm)
+
     def sinr_db(self, pos: np.ndarray, active: np.ndarray, t: int) -> np.ndarray:
         """Directed SINR (n,n): SINR at receiver i for transmitter j."""
         rx_power, noise = self._static_parts(pos, active)

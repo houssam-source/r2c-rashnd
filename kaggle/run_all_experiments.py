@@ -62,7 +62,7 @@ JOBS = [
     ("E4 reactive", "experiments/run_jamming.py",
      ["--modes", "reactive", "--trials", "50", "--workers", str(WORKERS)],
      "e4_reactive.csv"),
-    ("E5 loop stability", "experiments/run_e5.py",
+    ("E5 loop stability", "experiments/run_e5_all.py",
      ["--trials", "3", "--failures", "0.5"], "e5_convergence.csv"),
 ]
 

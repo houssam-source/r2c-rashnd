@@ -19,7 +19,14 @@ Faithful to the AAAI-26 paper (results/paper_reference.md §4):
 
 Assumptions: M = 3 top virtual neighbors; L_conn uses a soft count of
 Laplacian eigenvalues below a threshold (paper gives no smooth surrogate).
+
+Device support (environment variables, no API change):
+- R2C_IST_DEVICE: "auto" (default; cuda when available) | "cuda" | "cpu".
+- R2C_IST_TF32=1: allow TF32 matmul on Ampere+ GPUs (faster, slightly
+  lower precision — off by default so results match CPU runs bit-for-bit).
 """
+import os
+
 import numpy as np
 import scipy.spatial
 import scipy.sparse.csgraph
@@ -27,6 +34,22 @@ import torch
 import torch.nn as nn
 
 from .config import R2CParams
+
+
+def _pick_device() -> torch.device:
+    override = os.environ.get("R2C_IST_DEVICE", "auto").lower()
+    if override == "cpu":
+        return torch.device("cpu")
+    if override == "cuda":
+        if not torch.cuda.is_available():
+            raise RuntimeError("R2C_IST_DEVICE=cuda but no CUDA GPU is available")
+        return torch.device("cuda")
+    return torch.device("cuda" if torch.cuda.is_available() else "cpu")
+
+
+def _maybe_enable_tf32(dev: torch.device):
+    if dev.type == "cuda" and os.environ.get("R2C_IST_TF32", "0") == "1":
+        torch.backends.cuda.matmul.allow_tf32 = True
 
 
 def _normalized_laplacian(adj: np.ndarray) -> torch.Tensor:
@@ -79,7 +102,8 @@ class IST:
         self.p = p
         # seed torch so the GCN init (and hence every metric) is reproducible
         torch.manual_seed(p.seed)
-        self.device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+        self.device = _pick_device()
+        _maybe_enable_tf32(self.device)
         self.model = ChebNet(p).to(self.device)
         self.opt = torch.optim.Adam(self.model.parameters(), lr=p.lr)
         self.top_m = getattr(p, "top_m", 3)
@@ -223,12 +247,14 @@ class IST:
         labels, lnorm = self._graph_parts(pos, active, adj_override)
         n_parts = len(set(labels[active]))
         lnorm = lnorm.to(dev)
-        with torch.no_grad():
+        with torch.inference_mode():
             deltas = self.model(self._features(pos, active).to(dev), lnorm,
                                 torch.tensor(labels, device=dev), n_parts)
+        # one device->host transfer for all parts (not one per node)
+        d_np = deltas.cpu().numpy()
         out = np.zeros((len(pos), 2), dtype=float)
         for i in range(len(pos)):
             k = labels[i]
             if k < n_parts:
-                out[i] = deltas[k].cpu().numpy()
+                out[i] = d_np[k]
         return out

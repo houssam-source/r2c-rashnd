@@ -87,9 +87,15 @@ def main():
                         "mean", "std", "trials"])
         for dep in args.deployments:
             for fr in args.failures:
-                if args.checkpoint:
-                    ckpt_path = args.checkpoint.replace(
-                        "{fr}", str(int(fr))).replace("{dep}", dep)
+                if args.checkpoint or args.workers > 1:
+                    if args.checkpoint:
+                        ckpt_path = args.checkpoint.replace(
+                            "{fr}", str(int(fr))).replace("{dep}", dep)
+                    else:
+                        import tempfile
+                        tmpdir = tempfile.mkdtemp(prefix="r2c_ckpt_")
+                        ckpt_path = os.path.join(
+                            tmpdir, f"ckpt_{dep}_{int(fr)}.json")
                     r = checkpointed_run(p, fr / 100.0, dep, args.trials,
                                          args.ablation, ckpt_path,
                                          workers=args.workers)

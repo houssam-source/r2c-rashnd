@@ -33,7 +33,7 @@ class SwarmBridge:
 
     def __init__(self, n: int, params: R2CParams | None = None,
                  controller: str = "r2c", jammer_mode: str = "constant",
-                 seed: int = 0):
+                 seed: int = 0, variant: str = "v2"):
         self.p = params or R2CParams()
         self.n = n
         self.t = 0
@@ -42,7 +42,8 @@ class SwarmBridge:
         self.env = _BareEnv(self.p, n)
         if controller == "hybrid":
             self.ctrl = HybridController(
-                self.p, rf_p=RFParams(jammer_mode=jammer_mode, seed=seed))
+                self.p, rf_p=RFParams(jammer_mode=jammer_mode, seed=seed),
+                variant=variant)
         else:
             self.ctrl = R2CController(self.p)
 

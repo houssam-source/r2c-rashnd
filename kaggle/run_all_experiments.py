@@ -78,7 +78,7 @@ def find_project():
 
 
 def main():
-    start = int(sys.argv[sys.argv.index("--start") + 1]) if "--start" in sys.argv else 0
+    start = int(sys.argv[sys.argv.index('--start') + 1]) if '--start' in sys.argv else 10
     # Auto-resume from a previous Kaggle session if a checkpoint exists.
     resume_file = os.path.join(OUT, "resume_index.txt")
     if os.path.exists(resume_file):

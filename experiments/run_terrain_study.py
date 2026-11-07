@@ -43,13 +43,18 @@ def make_ruins(cells=20, seed=5):
 def trial(controller, seed, ruins, V):
     p = R2CParams(seed=seed, area=AREA, n_random=N, T=T, t1=T1)
     rng = np.random.default_rng(seed)
-    b = SwarmBridge(N, p, controller="hybrid", jammer_mode="constant",
-                    seed=seed,
-                    variant="v3b" if controller == "blind" else "v4")
+    if controller == "R2C":
+        b = SwarmBridge(N, p, controller="r2c", jammer_mode="constant",
+                        seed=seed)
+    else:
+        b = SwarmBridge(N, p, controller="hybrid", jammer_mode="constant",
+                        seed=seed,
+                        variant="v3b" if controller == "blind" else "v4")
+    if controller != "R2C":
+        b.ctrl.rf.attach_terrain(ruins, AREA, ALT)
     tower = np.array([AREA / 2, AREA / 2])
     b.set_jammer_pose(*tower)
-    # terrain truth on the metrics RF layer AND the controller's rf
-    b.ctrl.rf.attach_terrain(ruins, AREA, ALT)
+    # terrain truth on the metrics RF layer (and the controller's rf above)
     rf = RFLayer(p, RFParams(jammer_mode="constant", seed=seed))
     rf.attach_terrain(ruins, AREA, ALT)
 

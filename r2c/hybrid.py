@@ -58,13 +58,13 @@ class HybridController(R2CController):
         # v3a: A* bridging order + belief-penalized costs, v2 flooding beliefs
         # v3b: v2 bridging order, beliefs carried by the search
         # v3:  both (spec §6 ablation matrix)
-        assert variant in ("v2", "v3a", "v3b", "v3", "v4")
+        assert variant in ("v2", "v3a", "v3b", "v3", "v4", "v5")
         self.variant = variant
         self.gamma = gamma
         self.p_block = p_block
         self.counters = {"sensing_events": 0, "replans": 0}
         self._last_path = None
-        if variant in ("v3", "v3b", "v3a", "v4"):
+        if variant in ("v3", "v3b", "v3a", "v4", "v5"):
             from .search import BeliefStore
             self.beliefs = BeliefStore(contrast_ref, conf_min, age_max,
                                        self.counters)
@@ -184,7 +184,22 @@ class HybridController(R2CController):
                                         - graph.centroid[graph.largest])
                          / p.v_max)
 
-        edges, closed = astar(origin, graph, g_cost, h, on_open=on_open)
+        if self.variant == "v5":
+            # phase 1: A* expansion disseminates beliefs (fills the store)
+            _e1, closed = astar(origin, graph, g_cost, h, on_open=on_open)
+            # phase 2: DP re-plan under staleness-growing coefficients
+            from .dp import dp_plan
+            age_map = {}
+            for k in graph.parts:
+                bb = self.beliefs.get(self.beliefs.key(graph.parts[k]))
+                age_map[k] = bb["age"] if bb is not None else 0
+            edges, _V = dp_plan(origin, graph, corridor_power,
+                                lambda p: norm_power(self.rf, p),
+                                p.v_max, gamma=self.gamma,
+                                kappa_age=getattr(self, "planner_kappa", 1.0),
+                                age_of=lambda k: age_map.get(k, 0))
+        else:
+            edges, closed = astar(origin, graph, g_cost, h, on_open=on_open)
         # re-plan frequency metric
         sig = tuple(edges) if edges else None
         if sig != self._last_path:

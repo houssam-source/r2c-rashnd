@@ -40,6 +40,7 @@ class HybridController(R2CController):
                  use_geo_ist: bool = True, harm_gate: bool = True,
                  compress: float = 0.6,
                  variant: str = "v2",
+                 surge_damp: float = 0.0,
                  gamma: float = 0.5, conf_min: float = 0.3,
                  age_max: int = 100, p_block: float = 1.0):
         super().__init__(p, use_ist=True, use_awf=use_awf)
@@ -58,13 +59,15 @@ class HybridController(R2CController):
         # v3a: A* bridging order + belief-penalized costs, v2 flooding beliefs
         # v3b: v2 bridging order, beliefs carried by the search
         # v3:  both (spec §6 ablation matrix)
-        assert variant in ("v2", "v3a", "v3b", "v3", "v4", "v5")
+        assert variant in ("v2", "v3a", "v3b", "v3", "v4", "v5", "v6", "v7")
         self.variant = variant
+        self.surge_damp = 0.8 if variant == "v6" else surge_damp
+        self.surge_fade_compress = variant == "v7"   # relax 0.6*Rc under severe jam
         self.gamma = gamma
         self.p_block = p_block
         self.counters = {"sensing_events": 0, "replans": 0}
         self._last_path = None
-        if variant in ("v3", "v3b", "v3a", "v4", "v5"):
+        if variant in ("v3", "v3b", "v3a", "v4", "v5", "v6", "v7"):
             from .search import BeliefStore
             self.beliefs = BeliefStore(contrast_ref, conf_min, age_max,
                                        self.counters)
@@ -255,8 +258,18 @@ class HybridController(R2CController):
             Psum = P.sum()
             if Psum <= 0:
                 continue
-            if self.harm_gate and (P.mean() / noise_mw) >= sinr_req_lin:
+            sinr_mean = P.mean() / noise_mw
+            if self.harm_gate and sinr_mean >= sinr_req_lin:
                 continue  # jammer harmless here: no evasion
+            # severity damping (v6): the further below the delivery
+            # requirement, the less evasion helps -> fade it out and let
+            # topology repair dominate
+            damp = 1.0
+            if self.surge_damp > 0:
+                short = (sinr_req_lin - sinr_mean) / sinr_req_lin
+                damp = 1.0 - self.surge_damp * float(np.clip(short, 0.0, 1.0))
+                if damp <= 0.05:
+                    continue
             # belief: v3 variants use the store (adopted beliefs, same
             # vintage across clusters); v2/v3a measure locally per cluster
             if self.beliefs is not None:
@@ -277,7 +290,7 @@ class HybridController(R2CController):
             away = ctr - belief
             n = np.linalg.norm(away)
             if n > 1e-9 and conf > 0:
-                out[idx] = away / n * conf
+                out[idx] = away / n * conf * damp
         return out
 
     def velocity(self, env, t: int) -> np.ndarray:
@@ -285,9 +298,19 @@ class HybridController(R2CController):
         # full-range ISE spacing, tightened when jammed (short strong links
         # beat the jammer), cluster evasion toward free spectrum, IST bridge
         # repair on the (geo or quality) graph, AWF time fusion.
+        r_eff = None
         if self.compress is not None and self._jammed(env, t):
-            d_ise = self.ise.direction(env.pos, env.active,
-                                       self.compress * p.r_c)
+            r_eff = self.compress * p.r_c
+            if self.surge_fade_compress:
+                pw = self.rf.sensed_jammer_power(env.pos, env.active, t)
+                noise_mw = 10.0 ** (self.rf.rf.noise_dbm / 10.0)
+                gate = 10.0 ** (self.rf.rf.sinr_req_db / 10.0) * noise_mw
+                short = float(np.clip((gate - pw.mean() / noise_mw) / gate,
+                                      0.0, 1.0))
+                r_eff = p.r_c * (self.compress + (1.0 - self.compress)
+                                 * short)
+        if r_eff is not None:
+            d_ise = self.ise.direction(env.pos, env.active, r_eff)
         else:
             d_ise = self.ise.direction(env.pos, env.active)
         d_repel = self._cluster_repulsion(env, t)

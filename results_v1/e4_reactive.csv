@@ -1,0 +1,11 @@
+jammer,controller,metric,mean,std,trials
+reactive,R2C,REC,0.451400,0.371546,50
+reactive,R2C,recovered,0.760000,0.427083,50
+reactive,R2C,thr_mbps,4018.841864,954.843311,50
+reactive,R2C,mean_q,0.906517,0.028104,50
+reactive,R2C,lambda2_gated,-0.028929,0.116899,50
+reactive,R2C+RASHND,REC,0.609100,0.374921,50
+reactive,R2C+RASHND,recovered,0.560000,0.496387,50
+reactive,R2C+RASHND,thr_mbps,2683.030037,876.457403,50
+reactive,R2C+RASHND,mean_q,0.742439,0.037425,50
+reactive,R2C+RASHND,lambda2_gated,-0.158402,0.249745,50

@@ -1,0 +1,86 @@
+# Experiment Validation Report
+
+**Overall: SOME CHECKS FAILED**
+
+## E1 — R2C reproduction vs paper
+
+| failure | REC ours | REC paper | COV ours | COV paper |
+|---|---|---|---|---|
+| 20% | 0.025 | 0.037 | 0.991 | 1.000 |
+| 40% | 0.129 | 0.051 | 0.984 | 0.999 |
+| 60% | 0.597 | 0.181 | 0.948 | 0.978 |
+| 80% | 0.995 | 0.617 | 0.815 | 0.668 |
+- [PASS] random 20% REC within 2x of paper: ours 0.025 vs paper 0.037
+- [PASS] random 20% COV within 0.1 of paper: ours 0.991 vs paper 1.000
+- [PASS] random 40% REC within 2x of paper: ours 0.129 vs paper 0.051
+- [PASS] random 40% COV within 0.1 of paper: ours 0.984 vs paper 0.999
+- [FAIL] random 60% REC within 2x of paper: ours 0.597 vs paper 0.181
+- [PASS] random 60% COV within 0.1 of paper: ours 0.948 vs paper 0.978
+- [PASS] random 80% REC within 2x of paper: ours 0.995 vs paper 0.617
+- [FAIL] random 80% COV within 0.1 of paper: ours 0.815 vs paper 0.668
+
+## E3 — baselines vs paper (random, failure 50% ours vs paper 40-60%)
+
+| method | REC ours (50%) | REC paper (40/60%) | COV ours | COV paper |
+|---|---|---|---|---|
+| CEN | 0.079 | 0.350/0.590 | 0.990 | 0.817/0.565 |
+| HERO | 0.941 | 0.058/0.979 | 0.789 | 0.999/0.975 |
+| SIDR | 0.378 | 0.332/0.664 | 0.987 | 0.998/0.969 |
+| MDSG-APF | 1.000 | 0.190/0.305 | 0.862 | 0.987/0.888 |
+| GCN | 1.000 | 0.400/0.794 | 0.984 | 0.877/0.582 |
+| CR-MGC | 1.000 | 0.385/0.635 | 0.984 | 0.814/0.565 |
+| DEMD | 0.422 | 0.327/0.549 | 0.809 | 0.860/0.637 |
+| MDSG-GC | 1.000 | 0.110/0.323 | 0.876 | 0.992/0.863 |
+- [FAIL] R2C avg REC < best baseline avg REC (paper ordering): R2C 0.436 vs MDSG-APF/GC paper ~0.34
+
+![E1 vs paper](figs/e1_vs_paper.png)
+
+## E2 — ablations vs paper
+
+### random (Tables 3)
+
+- [PASS] random no_ist 60%: worse REC than full (paper (0.403, 0.98)): ours ablation 0.834 vs full 0.597
+- [PASS] random no_ist 80%: worse REC than full (paper None): ours ablation 1.000 vs full 0.995
+- [PASS] random no_ise 60%: COV drops vs full (paper (0.248, 0.943)): ours ablation COV 0.963 vs full 0.948
+- [FAIL] random no_ise 80%: COV drops vs full (paper (0.813, 0.606)): ours ablation COV 0.845 vs full 0.815
+- [FAIL] random no_awf 60%: REC not faster than full (paper (0.192, 0.978)): ours ablation 0.416 vs full 0.597
+- [PASS] random no_awf 80%: REC not faster than full (paper (0.698, 0.689)): ours ablation 0.985 vs full 0.995
+### grid (Table 4)
+
+- [PASS] grid no_ist 60%: worse REC than full (paper (0.477, 0.95)): ours ablation 0.798 vs full 0.617
+- [FAIL] grid no_ist 80%: worse REC than full (paper None): ours ablation 1.000 vs full 1.000
+- [FAIL] grid no_ise 60%: COV drops vs full (paper (0.311, 0.896)): ours ablation COV 0.984 vs full 0.958
+- [FAIL] grid no_ise 80%: COV drops vs full (paper (0.746, 0.611)): ours ablation COV 0.864 vs full 0.825
+- [FAIL] grid no_awf 60%: REC not faster than full (paper (0.257, 0.95)): ours ablation 0.275 vs full 0.617
+- [PASS] grid no_awf 80%: REC not faster than full (paper (0.702, 0.696)): ours ablation 1.000 vs full 1.000
+
+## E4 — proposal (R2C+RASHND) vs R2C baseline under jamming
+
+Success criterion: hybrid improves R2C by **at least 5%** on throughput and link quality.
+
+| jammer | metric | R2C | hybrid | gain % |
+|---|---|---|---|---|
+| constant | throughput (Mbps) | 4130.518 | 2915.458 | -29.4% |
+| constant | mean link quality | 0.903 | 0.747 | -17.2% |
+| constant | REC (quality-gated) | 0.451 | 0.567 | +25.7% |
+- [FAIL] constant: proposal throughput gain >= 5%: -29.4%
+- [FAIL] constant: proposal link-quality gain >= 5%: -17.2%
+| sweep | throughput (Mbps) | 4539.139 | 3764.923 | -17.1% |
+| sweep | mean link quality | 0.897 | 0.765 | -14.7% |
+| sweep | REC (quality-gated) | 0.451 | 0.558 | +23.6% |
+- [FAIL] sweep: proposal throughput gain >= 5%: -17.1%
+- [FAIL] sweep: proposal link-quality gain >= 5%: -14.7%
+| reactive | throughput (Mbps) | 4018.842 | 2683.030 | -33.2% |
+| reactive | mean link quality | 0.907 | 0.742 | -18.1% |
+| reactive | REC (quality-gated) | 0.451 | 0.609 | +34.9% |
+- [FAIL] reactive: proposal throughput gain >= 5%: -33.2%
+- [FAIL] reactive: proposal link-quality gain >= 5%: -18.1%
+
+## E5 — bidirectional-loop stability (last-100-step relative std)
+
+- [PASS] E5 constant/hybrid: converged (rel std < 0.5): mean q 0.766 +- 0.011 (rel 0.015)
+- [PASS] E5 constant/r2c: converged (rel std < 0.5): mean q 0.866 +- 0.007 (rel 0.009)
+- [PASS] E5 reactive/hybrid: converged (rel std < 0.5): mean q 0.762 +- 0.023 (rel 0.030)
+- [PASS] E5 reactive/r2c: converged (rel std < 0.5): mean q 0.883 +- 0.016 (rel 0.018)
+- [PASS] E5 sweep/hybrid: converged (rel std < 0.5): mean q 0.763 +- 0.023 (rel 0.030)
+- [PASS] E5 sweep/r2c: converged (rel std < 0.5): mean q 0.924 +- 0.007 (rel 0.008)

@@ -1,0 +1,11 @@
+jammer,controller,metric,mean,std,trials
+sweep,R2C,REC,0.451400,0.371546,50
+sweep,R2C,recovered,0.760000,0.427083,50
+sweep,R2C,thr_mbps,4539.138974,1018.184111,50
+sweep,R2C,mean_q,0.896943,0.023525,50
+sweep,R2C,lambda2_gated,-0.024982,0.101505,50
+sweep,R2C+RASHND,REC,0.548850,0.429809,50
+sweep,R2C+RASHND,recovered,0.560000,0.496387,50
+sweep,R2C+RASHND,thr_mbps,5632.602832,2307.493407,50
+sweep,R2C+RASHND,mean_q,0.895839,0.022658,50
+sweep,R2C+RASHND,lambda2_gated,-0.054514,0.154341,50

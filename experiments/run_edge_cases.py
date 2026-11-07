@@ -39,9 +39,13 @@ def apply_inject(env, ratio, rng, mode="uniform"):
         k = int(round(0.7 * len(idx)))
         if k:
             env.active[rng.choice(idx, size=k, replace=False)] = False
+        # top up toward the scenario total, but NEVER wipe the fleet
         rest = int(round(ratio * 200)) - (int((~env.active).sum()) - before)
-        if rest > 0:
-            env.inject_failures(rest / max(env.active.sum(), 1))
+        n_act = int(env.active.sum())
+        k2 = min(max(rest, 0), max(n_act - 5, 0))
+        if k2 > 0:
+            idx2 = np.where(env.active)[0]
+            env.active[rng.choice(idx2, size=k2, replace=False)] = False
     return int((~env.active).sum()) - before
 
 
@@ -106,7 +110,8 @@ def hook_edge_mission(env, rf, ctrl, t, p, rng):
 
 SCENARIOS = {
     "cascading":     {"inject": 0.5, "hook": hook_cascading},
-    "quadrant_kill": {"inject": 0.5, "hook": hook_quadrant},
+    "quadrant_kill": {"inject": 0.5, "hook": hook_quadrant,
+                      "skip_inject": True},
     "power_surge":   {"inject": 0.5, "hook": hook_power_surge},
     "jammer_move":   {"inject": 0.5, "hook": hook_jammer_move},
     "fast_sweep":    {"inject": 0.5, "hook": hook_fast_sweep,
@@ -142,7 +147,7 @@ def trial(scenario, controller, seed):
     t_rec, recovered = None, False
     thr_sum, q_sum, steps = 0.0, 0.0, 0
     for t in range(p.T):
-        if t == T1:
+        if t == T1 and not spec.get("skip_inject"):
             env.inject_failures(spec["inject"])
         spec["hook"](env, rf, ctrl, t, p, rng)
         if sigma > 0:

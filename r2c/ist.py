@@ -223,6 +223,8 @@ class IST:
         act_t = torch.tensor(active, dtype=torch.float32, device=dev)
         labels, lnorm = self._graph_parts(pos, active, adj_override)
         n_parts = len(set(labels[active]))
+        if n_parts == 0:
+            return 0.0   # total fleet loss: nothing to train
         lnorm = lnorm.to(dev)
         x = self._features(pos, active).to(dev)
         loss = None
@@ -246,6 +248,8 @@ class IST:
         dev = self.device
         labels, lnorm = self._graph_parts(pos, active, adj_override)
         n_parts = len(set(labels[active]))
+        if n_parts == 0:
+            return np.zeros((len(pos), 2), dtype=float)
         lnorm = lnorm.to(dev)
         with torch.inference_mode():
             deltas = self.model(self._features(pos, active).to(dev), lnorm,

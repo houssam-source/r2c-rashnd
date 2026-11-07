@@ -104,3 +104,15 @@ class _BareEnv:
         adj[:, ~self.active] = 0.0
         np.fill_diagonal(adj, 0.0)
         return adj
+
+    def inject_failures(self, ratio: float):
+        """Fail a fraction of active nodes (scenario hooks / fault injection)."""
+        idx = np.where(self.active)[0]
+        k = int(round(ratio * len(idx)))
+        if k:
+            if not hasattr(self, "_fail_rng"):
+                self._fail_rng = np.random.default_rng(0)
+            victims = self._fail_rng.choice(idx, size=k, replace=False)
+            self.active[victims] = False
+            self._dist_cache = None
+            self._adj_cache = None

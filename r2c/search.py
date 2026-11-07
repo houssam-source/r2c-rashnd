@@ -22,10 +22,10 @@ class CorridorGraph:
     nodes (the pair the IST would bridge).
     """
 
-    def __init__(self, ist, pos, active, labels):
+    def __init__(self, ist, pos, active, labels, dist=None):
         p = ist.p
         r_virt = p.r_com_boost * p.r_c
-        self.dist = np.linalg.norm(pos[:, None] - pos[None, :], axis=-1)
+        self.dist = dist if dist is not None else             np.linalg.norm(pos[:, None] - pos[None, :], axis=-1)
         self.parts, self.boundary, self.centroid = {}, {}, {}
         for k in set(labels[active]):
             idx = np.where((labels == k) & active)[0]

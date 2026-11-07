@@ -58,18 +58,34 @@ class HybridController(R2CController):
         # v3a: A* bridging order + belief-penalized costs, v2 flooding beliefs
         # v3b: v2 bridging order, beliefs carried by the search
         # v3:  both (spec §6 ablation matrix)
-        assert variant in ("v2", "v3a", "v3b", "v3")
+        assert variant in ("v2", "v3a", "v3b", "v3", "v4")
         self.variant = variant
         self.gamma = gamma
         self.p_block = p_block
         self.counters = {"sensing_events": 0, "replans": 0}
         self._last_path = None
-        if variant in ("v3", "v3b", "v3a"):
+        if variant in ("v3", "v3b", "v3a", "v4"):
             from .search import BeliefStore
             self.beliefs = BeliefStore(contrast_ref, conf_min, age_max,
                                        self.counters)
         else:
             self.beliefs = None
+
+    # ---- v4: mission distances on the shared camera-construct --------------
+    def _mission_dist(self, env):
+        """Distance matrix used for clustering/bridging. v4 masks links that
+        the terrain blocks (the camera-construct visibility graph); others
+        use geometric range only."""
+        d = env.distances()
+        if self.variant == "v4":
+            m = self.rf._vis_mask(env.pos)
+            if m is not None:
+                d = np.where(m, d, np.inf)
+        return d
+
+    def set_terrain(self, hmap, area: float, altitude: float):
+        """Attach the shared camera-construct (terrain visibility map)."""
+        self.rf.attach_terrain(hmap, area, altitude)
 
     # ---- v3 planning (runs at each IST invocation) -------------------------
     def _v3_plan(self, env, t: int):
@@ -81,12 +97,13 @@ class HybridController(R2CController):
         from .search import (CorridorGraph, astar, belief_power_at,
                              build_planned_adj, norm_power)
         pos, active, p = env.pos, env.active, self.p
-        adj = ((env.distances() <= p.r_c) & active[:, None]
+        mdist = self._mission_dist(env)
+        adj = ((mdist <= p.r_c) & active[:, None]
                & active[None, :]).astype(float)
         np.fill_diagonal(adj, 0.0)
         _, labels = scipy.sparse.csgraph.connected_components(adj,
                                                               directed=False)
-        graph = CorridorGraph(self.ist, pos, active, labels)
+        graph = CorridorGraph(self.ist, pos, active, labels, dist=mdist)
         self.beliefs.age_step()
         self.beliefs.demote_stale()
         pw = self.rf.sensed_jammer_power(pos, active, t)
@@ -106,7 +123,7 @@ class HybridController(R2CController):
             return m / gate
 
         origin = max(clusters, key=exposure)
-        v3_beliefs = self.variant in ("v3", "v3b")
+        v3_beliefs = self.variant in ("v3", "v3b", "v4")
         if v3_beliefs:
             self.beliefs.measure(self.beliefs.key(graph.parts[origin]), pos,
                                  pw, graph.parts[origin])
@@ -208,7 +225,8 @@ class HybridController(R2CController):
         """
         pos, active, p = env.pos, env.active, self.p
         out = np.zeros_like(pos)
-        adj = ((env.distances() <= p.r_c) & active[:, None]
+        mdist = self._mission_dist(env)
+        adj = ((mdist <= p.r_c) & active[:, None]
                & active[None, :]).astype(float)
         np.fill_diagonal(adj, 0.0)
         _, labels = scipy.sparse.csgraph.connected_components(adj,

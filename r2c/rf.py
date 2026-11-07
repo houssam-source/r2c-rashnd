@@ -58,6 +58,9 @@ class RFLayer:
         self._static = None
         self._dist_key = None
         self._dist = None
+        # optional shared camera-construct (terrain visibility); when set,
+        # blocked links carry q = 0 (no signal through buildings).
+        self._terrain = None
 
     def _distances(self, pos: np.ndarray) -> np.ndarray:
         key = pos.tobytes()
@@ -65,6 +68,24 @@ class RFLayer:
             self._dist = np.linalg.norm(pos[:, None] - pos[None, :], axis=-1)
             self._dist_key = key
         return self._dist
+
+    def attach_terrain(self, hmap: np.ndarray, area: float,
+                       altitude: float):
+        """Shared camera-construct: LOS visibility at the mission altitude."""
+        from .visibility import los_cell_matrix
+        self._terrain = (los_cell_matrix(hmap, area, altitude), area)
+
+    def _vis_mask(self, pos: np.ndarray):
+        if self._terrain is None:
+            return None
+        from .visibility import vis_mask
+        return vis_mask(pos, self._terrain[0], self._terrain[1])
+
+    def _apply_vis(self, adj: np.ndarray, pos: np.ndarray) -> np.ndarray:
+        m = self._vis_mask(pos)
+        if m is not None:
+            adj = adj * m
+        return adj
 
     def _static_parts(self, pos: np.ndarray, active: np.ndarray):
         """rx_power[i, j] (j -> i) and interferer noise, per (pos, active)."""
@@ -161,6 +182,7 @@ class RFLayer:
         adj = ((dist <= r_c) & active[:, None] & active[None, :]).astype(float)
         q = self.quality_map(self.sinr_db(pos, active, t))
         adj[q < self.rf.theta] = 0.0
+        adj = self._apply_vis(adj, pos)
         np.fill_diagonal(adj, 0.0)
         return adj
 
@@ -174,7 +196,7 @@ class RFLayer:
         base = (dist <= r_c) & active[:, None] & active[None, :]
         w = np.maximum(0.0, 1.0 - dist / r_c) * base
         q = self.quality_map(self.sinr_db(pos, active, t))
-        return w * q
+        return self._apply_vis(w * q, pos)
 
     def throughput(self, pos: np.ndarray, active: np.ndarray, t: int) -> float:
         """Aggregate achieved throughput [Mbps] over admitted links."""

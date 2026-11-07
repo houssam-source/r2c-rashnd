@@ -59,15 +59,20 @@ class HybridController(R2CController):
         # v3a: A* bridging order + belief-penalized costs, v2 flooding beliefs
         # v3b: v2 bridging order, beliefs carried by the search
         # v3:  both (spec §6 ablation matrix)
-        assert variant in ("v2", "v3a", "v3b", "v3", "v4", "v5", "v6", "v7")
+        assert variant in ("v2", "v3a", "v3b", "v3", "v4", "v5", "v6", "v7", "v8")
         self.variant = variant
         self.surge_damp = 0.8 if variant == "v6" else surge_damp
         self.surge_fade_compress = variant == "v7"   # relax 0.6*Rc under severe jam
+        # v8: recovery-latched evasion fade - once reconnected, ramp
+        # repulsion down so ISE re-expands and coverage rebuilds
+        self.evasion_fade = 100 if variant == "v8" else 0
+        self._latched_recovery = None
+        self._was_fragmented = False
         self.gamma = gamma
         self.p_block = p_block
         self.counters = {"sensing_events": 0, "replans": 0}
         self._last_path = None
-        if variant in ("v3", "v3b", "v3a", "v4", "v5", "v6", "v7"):
+        if variant in ("v3", "v3b", "v3a", "v4", "v5", "v6", "v7", "v8"):
             from .search import BeliefStore
             self.beliefs = BeliefStore(contrast_ref, conf_min, age_max,
                                        self.counters)
@@ -313,7 +318,20 @@ class HybridController(R2CController):
             d_ise = self.ise.direction(env.pos, env.active, r_eff)
         else:
             d_ise = self.ise.direction(env.pos, env.active)
+        if t > p.t1 and hasattr(env, "connected"):
+            c_now = env.connected()
+            if not c_now:
+                self._was_fragmented = True
+            elif (self.evasion_fade and self._latched_recovery is None
+                    and self._was_fragmented):
+                # true re-connection after fragmentation: begin evasion fade
+                self._latched_recovery = t
+        saved_gain = self.repel_gain
+        if self.evasion_fade and self._latched_recovery is not None:
+            dt = t - self._latched_recovery
+            self.repel_gain = saved_gain * max(0.0, 1.0 - dt / self.evasion_fade)
         d_repel = self._cluster_repulsion(env, t)
+        self.repel_gain = saved_gain
 
         d_ist = np.zeros_like(d_ise)
         if t % p.T_ist == 0:

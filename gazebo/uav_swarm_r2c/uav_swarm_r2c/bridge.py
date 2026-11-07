@@ -105,6 +105,15 @@ class _BareEnv:
         np.fill_diagonal(adj, 0.0)
         return adj
 
+    def connected(self) -> bool:
+        n_act = int(self.active.sum())
+        if n_act <= 1:
+            return True
+        import scipy.sparse.csgraph as _cg
+        adj = self.adjacency()
+        return _cg.connected_components(
+            adj[np.ix_(self.active, self.active)], directed=False)[0] == 1
+
     def inject_failures(self, ratio: float):
         """Fail a fraction of active nodes (scenario hooks / fault injection)."""
         idx = np.where(self.active)[0]

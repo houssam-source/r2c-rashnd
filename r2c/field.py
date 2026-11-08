@@ -40,7 +40,8 @@ class FieldController:
                  beta: float = 0.35, w_repair: float = 1.0,
                  w_flee: float = 0.6, w_cover: float = 0.5,
                  cover_margin: float = 0.15, altitude: float = 30.0,
-                 terrain: tuple | None = None, seed: int = 0):
+                 terrain: tuple | None = None, seed: int = 0,
+                 eta: float = 0.15, hops: int = 2):
         self.p = p
         self.rf = RFLayer(p, rf_p or RFParams(seed=seed))
         self.ise = ISE(p)                       # base spacing potential
@@ -64,9 +65,9 @@ class FieldController:
         self.v = None
         self.m = None          # consensus global mean of v (constant under
                                # symmetric diffusion, so gossip converges to it)
-        self.eta = 0.15        # persistent injection of the symmetry-breaking
+        self.eta = eta         # persistent injection of the symmetry-breaking
                                # mode -> sustained bottleneck field
-        self.hops = 2          # gossip TTL: relayed multi-hop neighborhood
+        self.hops = hops       # gossip TTL: relayed multi-hop neighborhood
         self._rng = np.random.default_rng(seed)
 
     # ---- local adjacency with LOS -----------------------------------------

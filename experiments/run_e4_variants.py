@@ -26,9 +26,17 @@ from r2c.rf import RFLayer, RFParams
 def trial(p, rf_p, failure_ratio, controller, variant):
     env = SwarmEnvironment(p, p.n_random, "random")
     rf = RFLayer(p, rf_p)
-    if controller == "field" or variant == "field":
+    if controller == "field" or variant.startswith("field"):
         from r2c.field import FieldController
-        ctrl = FieldController(p, rf_p, seed=p.seed)
+        kw = {}
+        spec = variant if variant.startswith("field") else controller
+        if "(" in spec:
+            inner = spec.split("(", 1)[1].split(")")[0]
+            for kv in inner.split(","):
+                if "=" in kv:
+                    k, v = kv.split("=")
+                    kw[k.strip()] = float(v)
+        ctrl = FieldController(p, rf_p, seed=p.seed, **kw)
     elif controller == "hybrid":
         ctrl = HybridController(p, rf_p=rf_p, variant=variant)
     else:

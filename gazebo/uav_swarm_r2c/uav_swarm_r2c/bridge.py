@@ -33,7 +33,8 @@ class SwarmBridge:
 
     def __init__(self, n: int, params: R2CParams | None = None,
                  controller: str = "r2c", jammer_mode: str = "constant",
-                 seed: int = 0, variant: str = "v2"):
+                 seed: int = 0, variant: str = "v2",
+                 terrain: tuple | None = None, altitude: float = 30.0):
         self.p = params or R2CParams()
         self.n = n
         self.t = 0
@@ -48,9 +49,12 @@ class SwarmBridge:
             from r2c.field import FieldController
             self.ctrl = FieldController(
                 self.p, RFParams(jammer_mode=jammer_mode, seed=seed),
-                seed=seed)
+                seed=seed, altitude=altitude,
+                terrain=terrain[:2] if terrain is not None else None)
         else:
             self.ctrl = R2CController(self.p)
+        if terrain is not None and hasattr(self.ctrl, "set_terrain"):
+            self.ctrl.set_terrain(terrain[0], terrain[1], altitude)
 
     # ---- world interface ---------------------------------------------------
     def update_poses(self, xy: np.ndarray):

@@ -139,6 +139,9 @@ def trial(scenario, controller, seed):
     rf = RFLayer(p, rf_p)
     if controller == "R2C":
         ctrl = R2CController(p)
+    elif controller == "field":
+        from r2c.field import FieldController
+        ctrl = FieldController(p, rf_p, seed=p.seed)
     else:
         ctrl = HybridController(p, rf_p=rf_p, variant=controller)
     rng = np.random.default_rng(seed)

@@ -44,6 +44,11 @@ class SwarmBridge:
             self.ctrl = HybridController(
                 self.p, rf_p=RFParams(jammer_mode=jammer_mode, seed=seed),
                 variant=variant)
+        elif controller == "field":
+            from r2c.field import FieldController
+            self.ctrl = FieldController(
+                self.p, RFParams(jammer_mode=jammer_mode, seed=seed),
+                seed=seed)
         else:
             self.ctrl = R2CController(self.p)
 

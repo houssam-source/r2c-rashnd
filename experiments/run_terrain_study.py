@@ -46,12 +46,16 @@ def trial(controller, seed, ruins, V):
     if controller == "R2C":
         b = SwarmBridge(N, p, controller="r2c", jammer_mode="constant",
                         seed=seed)
+    elif controller == "field":
+        b = SwarmBridge(N, p, controller="field", jammer_mode="constant",
+                        seed=seed, variant="field",
+                        terrain=(ruins, AREA), altitude=ALT)
     else:
         b = SwarmBridge(N, p, controller="hybrid", jammer_mode="constant",
                         seed=seed,
-                        variant="v3b" if controller == "blind" else "v4")
-    if controller != "R2C":
-        b.ctrl.rf.attach_terrain(ruins, AREA, ALT)
+                        variant="v3b" if controller == "blind" else controller)
+    if controller != "R2C" and hasattr(b.ctrl, "set_terrain"):
+        b.ctrl.set_terrain(ruins, AREA, ALT)
     tower = np.array([AREA / 2, AREA / 2])
     b.set_jammer_pose(*tower)
     # terrain truth on the metrics RF layer (and the controller's rf above)

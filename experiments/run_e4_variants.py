@@ -28,6 +28,9 @@ def trial(p, rf_p, failure_ratio, controller, variant):
     rf = RFLayer(p, rf_p)
     if controller == "hybrid":
         ctrl = HybridController(p, rf_p=rf_p, variant=variant)
+    elif controller == "field":
+        from r2c.field import FieldController
+        ctrl = FieldController(p, rf_p, seed=p.seed)
     else:
         ctrl = R2CController(p)
     t_rec, recovered = None, False

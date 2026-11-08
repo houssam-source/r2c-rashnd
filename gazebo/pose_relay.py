@@ -15,9 +15,10 @@ class PoseRelay(Node):
         super().__init__("swarm_pose_relay")
         self.declare_parameter("n_drones", 20)
         self.n = int(self.get_parameter("n_drones").value)
-        self.sub = self.create_subscription(TFMessage, "/world/swarm_arena/pose",
-                                            self.cb, 10)
-        self.pubs = {i: self.create_publisher(PoseStamped, f"/swarm/pose/{i}", 10)
+        self.sub = self.create_subscription(
+            TFMessage, "/world/swarm_arena/dynamic_pose/info",
+            self.cb, 10)
+        self.pubs = {i: self.create_publisher(PoseStamped, f"/swarm/pose/drone_{i}", 10)
                      for i in range(self.n)}
 
     def cb(self, msg):

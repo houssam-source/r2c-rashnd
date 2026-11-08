@@ -67,11 +67,11 @@ class BridgeNode(Node):
         self.subs = []
         for i in range(n):
             self.subs.append(self.create_subscription(
-                PoseStamped, f"/swarm/pose/{i}", self._mk_pose_cb(i), 10))
+                PoseStamped, f"/swarm/pose/drone_{i}", self._mk_pose_cb(i), 10))
         self.pubs = []
         for i in range(n):
             topic = (f"/uav{i}/mavros/setpoint_velocity/cmd_vel"
-                     if self.use_mavros else f"/swarm/cmd_vel/{i}")
+                     if self.use_mavros else f"/swarm/cmd_vel/drone_{i}")
             self.pubs.append(self.create_publisher(Twist, topic, 10))
 
         rate = float(self.get_parameter("rate_hz").value)

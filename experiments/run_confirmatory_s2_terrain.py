@@ -40,7 +40,7 @@ def one(task):
     b.update_poses(pos)
     b.inject_failures(0.0)
     t_rec, recovered = None, False
-    thr_sum = q_sum = steps = 0.0
+    thr_sum = pd_sum = q_sum = steps = 0.0
     cov_post_sum = cov_post_n = 0.0
     for t in range(T):
         if t == T1:
@@ -53,6 +53,7 @@ def one(task):
         b.update_poses(pos)
         if t > T1:
             thr_sum += rf.throughput(pos, a, t)
+            pd_sum += rf.last_per_drone_mbps
             q_sum += rf.mean_quality(pos, a, t)
             steps += 1
             cov_post_sum += coverage(pos, a, p.r_c, AREA)
@@ -73,6 +74,7 @@ def one(task):
     return {"recovered": float(recovered),
             "REC": (t_rec / T) if recovered else 1.0,
             "thr_mbps": thr_sum / max(steps, 1),
+            "thr_per_drone_mbps": pd_sum / max(steps, 1),
             "mean_q": q_sum / max(steps, 1),
             "cov_end": coverage(pos, b.env.active, p.r_c, AREA),
             "cov_post_mean": cov_post_sum / max(cov_post_n, 1)}
@@ -102,11 +104,12 @@ def main():
     with open(args.out, "w", newline="") as f:
         w = csv.writer(f)
         w.writerow(["seed", "mode", "controller", "recovered", "REC",
-                    "thr_mbps", "mean_q", "cov_end", "cov_post_mean"])
+                    "thr_mbps", "thr_per_drone_mbps", "mean_q", "cov_end",
+                    "cov_post_mean"])
         for idx, (c, s, _r, _v) in enumerate(tasks):
             r = res[idx]
             w.writerow([s, "terrain", c, f"{r['recovered']:.0f}",
-                        f"{r['REC']:.4f}", f"{r['thr_mbps']:.3f}",
+                        f"{r['REC']:.4f}", f"{r['thr_mbps']:.3f}", f"{r['thr_per_drone_mbps']:.3f}",
                         f"{r['mean_q']:.4f}", f"{r['cov_end']:.4f}",
                         f"{r['cov_post_mean']:.4f}"])
     print("wrote", args.out)

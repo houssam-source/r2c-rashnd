@@ -8,7 +8,11 @@ SINR-grid model as an acceptable fallback). Provides:
 - background interferers: static Poisson point process emitters
 - per-link SINR -> packet-delivery ratio q_ij in [0,1] (the quality map)
 - quality-gated adjacency: edge iff d <= r_c AND q_ij >= theta
-- throughput: sum over active links of B*log2(1+SINR)*PDR
+- throughput: per-drone radio-capped sum of B*log2(1+SINR)*PDR.
+  Each admitted link (i,j) offers B*log2(1+SINR)*PDR Mbps on each
+  endpoint's 20 MHz QPSK radio (~30 Mbps ceiling); a drone's carried rate
+  is its offered load over all links, clipped at link_cap_mbps, and the
+  aggregate is the sum over drones (<= n_active * link_cap_mbps, asserted).
 
 Assumption: RASHND internals are not public; this approximates its
 sensing -> link-quality-map function as described in the guide.
@@ -32,6 +36,7 @@ class RFParams:
     jammer_speed: float = 2.0       # m/step (reactive)
     sweep_period: int = 200         # steps per sweep traverse
     seed: int = 0
+    link_cap_mbps: float = 30.0     # per-radio ceiling: QPSK on 20 MHz (~30 Mbps)
 
 
 def _dbm_to_mw(dbm):
@@ -61,6 +66,7 @@ class RFLayer:
         # optional shared camera-construct (terrain visibility); when set,
         # blocked links carry q = 0 (no signal through buildings).
         self._terrain = None
+        self.last_per_drone_mbps = 0.0
 
     def _distances(self, pos: np.ndarray) -> np.ndarray:
         key = pos.tobytes()
@@ -199,14 +205,33 @@ class RFLayer:
         return self._apply_vis(w * q, pos)
 
     def throughput(self, pos: np.ndarray, active: np.ndarray, t: int) -> float:
-        """Aggregate achieved throughput [Mbps] over admitted links."""
+        """Aggregate achieved throughput [Mbps], radio-capped per drone.
+
+        Per step: every admitted link (i,j) offers
+        B*log2(1+SINR_ij)*q_ij Mbps on each endpoint's radio; drone i's
+        carried rate is its offered load summed over links, clipped at
+        rf.link_cap_mbps (one 20 MHz QPSK radio per drone). Aggregate is
+        the sum over drones. Physical guard (never clamps, asserts only):
+        aggregate must not exceed n_active * link_cap_mbps.
+        Also sets self.last_per_drone_mbps = mean per-drone rate [Mbps].
+        """
         p, rf = self.p, self.rf
         adj = self.gated_adjacency(pos, active, t)
         sinr = self.sinr_db(pos, active, t)
         sinr_lin = 10.0 ** (sinr / 10.0)
         q = self.quality_map(sinr)
-        return float((rf.bandwidth_mhz *
-                      np.log2(1.0 + sinr_lin) * q * adj).sum())
+        link_mbps = rf.bandwidth_mhz * np.log2(1.0 + sinr_lin) * q * adj
+        np.fill_diagonal(link_mbps, 0.0)
+        per_drone_mbps = link_mbps.sum(axis=1)
+        capped_mbps = np.minimum(per_drone_mbps, rf.link_cap_mbps)
+        total_mbps = float(capped_mbps.sum())
+        n_active = int(np.count_nonzero(active))
+        agg_cap_mbps = max(n_active, 1) * rf.link_cap_mbps
+        assert total_mbps <= agg_cap_mbps * 1.01, \
+            (f"impossible throughput: {total_mbps:.2f} Mbps > "
+             f"{n_active} x {rf.link_cap_mbps} Mbps")
+        self.last_per_drone_mbps = float(capped_mbps.mean())
+        return total_mbps
 
     def mean_quality(self, pos: np.ndarray, active: np.ndarray, t: int) -> float:
         adj_mask = self.gated_adjacency(pos, active, t) > 0

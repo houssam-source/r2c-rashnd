@@ -46,12 +46,13 @@ def main():
     os.makedirs(os.path.dirname(args.out), exist_ok=True)
     with open(args.out, "w", newline="") as f:
         w = csv.writer(f)
-        w.writerow(["seed", "controller", "recovered", "REC", "thr_mbps",
+        w.writerow(["seed", "controller", "recovered", "REC", "thr_mbps", "thr_per_drone_mbps",
                     "mean_q"])
         for idx, (c, seed, _r, _v) in enumerate(tasks):
             r = results[idx]
             w.writerow([seed, c, f"{r['recovered']:.0f}", f"{r['REC']:.4f}",
-                        f"{r['thr_mbps']:.3f}", f"{r['mean_q']:.4f}"])
+                        f"{r['thr_mbps']:.3f}", f"{r['thr_per_drone_mbps']:.3f}",
+                        f"{r['mean_q']:.4f}"])
     print("wrote", args.out)
 
 

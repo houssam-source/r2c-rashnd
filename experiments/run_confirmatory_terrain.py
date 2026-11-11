@@ -40,11 +40,12 @@ def main():
     with open(args.out, "w", newline="") as f:
         w = csv.writer(f)
         w.writerow(["seed", "mode", "controller", "recovered", "REC",
-                    "thr_mbps", "mean_q"])
+                    "thr_mbps", "thr_per_drone_mbps", "mean_q"])
         for idx, (s, c, sd, _r, _v) in enumerate(tasks):
             r = res[idx]
             w.writerow([sd, s, c, f"{r['recovered']:.0f}", f"{r['REC']:.4f}",
-                        f"{r['thr_mbps']:.3f}", f"{r['mean_q']:.4f}"])
+                        f"{r['thr_mbps']:.3f}", f"{r['thr_per_drone_mbps']:.3f}",
+                        f"{r['mean_q']:.4f}"])
     print("wrote", args.out)
 
 

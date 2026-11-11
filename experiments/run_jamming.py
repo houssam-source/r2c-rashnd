@@ -29,7 +29,7 @@ def run_jamming_trial(p: R2CParams, rf_p: RFParams, failure_ratio: float,
     rf = RFLayer(p, rf_p)
     ctrl = HybridController(p, rf) if hybrid else R2CController(p)
     t_rec, recovered = None, False
-    thr_sum, q_sum, steps = 0.0, 0.0, 0
+    thr_sum, pd_sum, q_sum, steps = 0.0, 0.0, 0.0, 0
 
     for t in range(p.T):
         if t == p.t1:
@@ -37,6 +37,7 @@ def run_jamming_trial(p: R2CParams, rf_p: RFParams, failure_ratio: float,
         env.step(ctrl.velocity(env, t))
         if t > p.t1:
             thr_sum += rf.throughput(env.pos, env.active, t)
+            pd_sum += rf.last_per_drone_mbps
             q_sum += rf.mean_quality(env.pos, env.active, t)
             steps += 1
             if not recovered and rf.gated_adjacency(
@@ -50,6 +51,7 @@ def run_jamming_trial(p: R2CParams, rf_p: RFParams, failure_ratio: float,
         "REC": (t_rec / p.T) if recovered else 1.0,
         "recovered": float(recovered),
         "thr_mbps": thr_sum / max(steps, 1),
+        "thr_per_drone_mbps": pd_sum / max(steps, 1),
         "mean_q": q_sum / max(steps, 1),
         "lambda2_gated": algebraic_connectivity(gadj),
     }

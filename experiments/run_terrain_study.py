@@ -67,7 +67,7 @@ def trial(controller, seed, ruins, V):
     b.inject_failures(0.0)
 
     t_rec, recovered = None, False
-    thr_sum, q_sum, steps = 0.0, 0.0, 0
+    thr_sum, pd_sum, q_sum, steps = 0.0, 0.0, 0.0, 0
     for t in range(T):
         if t == T1:
             b.inject_failures(3 / N, rng)
@@ -78,6 +78,7 @@ def trial(controller, seed, ruins, V):
         b.update_poses(pos)
         if t > T1:
             thr_sum += rf.throughput(pos, a, t)
+            pd_sum += rf.last_per_drone_mbps
             q_sum += rf.mean_quality(pos, a, t)
             steps += 1
             ids = np.where(a)[0]
@@ -97,6 +98,7 @@ def trial(controller, seed, ruins, V):
         "recovered": float(recovered),
         "REC": (t_rec / T) if recovered else 1.0,
         "thr_mbps": thr_sum / max(steps, 1),
+        "thr_per_drone_mbps": pd_sum / max(steps, 1),
         "mean_q": q_sum / max(steps, 1),
     }
 

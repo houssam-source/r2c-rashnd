@@ -39,11 +39,12 @@ def main():
     os.makedirs(os.path.dirname(args.out), exist_ok=True)
     with open(args.out, "w", newline="") as f:
         w = csv.writer(f)
-        w.writerow(["seed", "config", "recovered", "REC", "thr_mbps", "mean_q"])
+        w.writerow(["seed", "config", "recovered", "REC", "thr_mbps", "thr_per_drone_mbps", "mean_q"])
         for idx, (c, s) in enumerate(tasks):
             r = res[idx]
             w.writerow([s, c, f"{r['recovered']:.0f}", f"{r['REC']:.4f}",
-                        f"{r['thr_mbps']:.3f}", f"{r['mean_q']:.4f}"])
+                        f"{r['thr_mbps']:.3f}", f"{r['thr_per_drone_mbps']:.3f}",
+                        f"{r['mean_q']:.4f}"])
     import numpy as np
     print("config, recovery, thr, q")
     for c in CONFIGS:

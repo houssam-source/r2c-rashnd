@@ -26,7 +26,10 @@ from r2c.rf import RFLayer, RFParams
 def trial(p, rf_p, failure_ratio, controller, variant):
     env = SwarmEnvironment(p, p.n_random, "random")
     rf = RFLayer(p, rf_p)
-    if controller == "field" or variant.startswith("field"):
+    if controller == "v9" or variant == "v9":
+        from r2c.ig import IGController
+        ctrl = IGController(p, rf_p=rf_p, seed=p.seed)
+    elif controller == "field" or variant.startswith("field"):
         from r2c.field import FieldController
         kw = {}
         spec = variant if variant.startswith("field") else controller
@@ -72,6 +75,8 @@ def trial(p, rf_p, failure_ratio, controller, variant):
     else:
         out["sensing_events"] = np.nan
         out["replans"] = np.nan
+    if hasattr(ctrl, "diagnostics"):
+        out.update(ctrl.diagnostics())   # v9 diagnostics (never headline)
     return out
 
 

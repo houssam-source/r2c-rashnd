@@ -26,8 +26,15 @@ S_REF = 2.0                # constant IG scale for the edge discount
 KB = 1024.0
 ECE_BINS = 10
 ECE_GATE = 0.05
-# preregistered per-mode decay biases (log-odds per step)
-DECAY_BIAS = {"constant": 0.0, "sweep": -0.002, "reactive": -0.005}
+# preregistered per-mode temporal model: multiplicative log-odds
+# forgetting factor (1.0 = static world; <1 relaxes stale evidence back
+# toward the uniform prior, which moving jammers require)
+FORGET = {"constant": 1.0, "sweep": 0.995, "reactive": 0.99}
+# preregistered per-mode "interior impossibility" weights: a MOVING
+# jammer violates the static-source assumption, so interior negative
+# evidence is weighted down by mobility (constant = stationary -> full)
+NEAR_WEIGHT = {"constant": -2.0, "sweep": -0.05, "reactive": -0.2}
+ANNULUS_GAIN = 2.0   # within the preregistered clip(+/-2) bound
 # preregistered predicted-observation multipliers for B_pred
 PRED_OBS = {"hold & observe": 1.0, "flee/reposition": 1.0,
             "switch channel": 2.0}
@@ -145,7 +152,7 @@ class GridFilter:
         self.version += 1
 
     def decay(self, mode):
-        self.L += np.float32(DECAY_BIAS[mode])
+        self.L = (self.L * np.float32(FORGET[mode])).astype(np.float32)
 
     def observe_ch0_tomography(self, pos, active, pw, rf):
         """Range-based RF tomography: observed jammer power at drone i
@@ -172,9 +179,10 @@ class GridFilter:
             ann = np.abs(dist - d[k]) <= half
             near = (dist < d[k] - half) & (dist <= win[k])
             if ann.any():
-                self.apply(0, self.cell_of(self._centers[ann]), 1.0)
+                self.apply(0, self.cell_of(self._centers[ann]), ANNULUS_GAIN)
             if near.any():
-                self.apply(0, self.cell_of(self._centers[near]), -2.0)
+                self.apply(0, self.cell_of(self._centers[near]),
+                           NEAR_WEIGHT[rf.rf.jammer_mode])
         self.version += 1
 
     # ---- IG support ----------------------------------------------------------

@@ -460,7 +460,7 @@ class IGController(HybridController):
         gadj = self.rf.gated_adjacency(pos, active, t)
         self.grid.observe(pos, active, gadj, pw, gate,
                           mult=2 if self._switch_boost else 1)
-        self.grid.observe_ch0_tomography(pos, active, pw, self.rf)
+        self.grid.observe_ch0_tomography(pos, active, pw, self.rf, t)
         self._switch_boost = False
         self.grid.decay(self.rf.rf.jammer_mode)
         if t % self.p.T_ist == 0:

@@ -154,13 +154,17 @@ class GridFilter:
     def decay(self, mode):
         self.L = (self.L * np.float32(FORGET[mode])).astype(np.float32)
 
-    def observe_ch0_tomography(self, pos, active, pw, rf):
+    TOMO_SLOTS = 20   # divided sensing: slot i % K senses each step
+                      # (design constant, v2 pattern; not a knob)
+
+    def observe_ch0_tomography(self, pos, active, pw, rf, t=0):
         """Range-based RF tomography: observed jammer power at drone i
         implies the jammer lies on a circle of radius d_i (free-space
         model, anti-cheat: received power only). Cells in the annulus
         get +1, cells inside (would imply higher power than observed)
         and outside the local window get -2."""
         act = np.where(active)[0]
+        act = act[act % self.TOMO_SLOTS == t % self.TOMO_SLOTS]
         if len(act) == 0:
             return
         p_dbm = 10.0 * np.log10(np.maximum(pw[act], 1e-30))

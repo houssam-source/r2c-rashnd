@@ -29,7 +29,7 @@ ECE_GATE = 0.05
 # preregistered per-mode temporal model: multiplicative log-odds
 # forgetting factor (1.0 = static world; <1 relaxes stale evidence back
 # toward the uniform prior, which moving jammers require)
-FORGET = {"constant": 1.0, "sweep": 0.995, "reactive": 0.99}
+FORGET = {"constant": 1.0, "sweep": 0.95, "reactive": 0.96}
 # preregistered per-mode "interior impossibility" weights: a MOVING
 # jammer violates the static-source assumption, so interior negative
 # evidence is weighted down by mobility (constant = stationary -> full)

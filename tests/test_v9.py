@@ -112,8 +112,8 @@ def test_zero_bias_decay_leaves_static_map():
     assert np.array_equal(gf.L, snap), "bias-0 decay changed the map"
     gf2 = GridFilter()
     gf2.L = snap.copy()
-    gf2.decay("reactive")               # forgetting factor 0.99
-    assert np.allclose(gf2.L, snap * 0.99, atol=1e-6)
+    gf2.decay("reactive")               # forgetting factor 0.96 (frozen)
+    assert np.allclose(gf2.L, snap * 0.96, atol=1e-6)
 
 
 def test_metered_bytes_equal_logged_cdis():

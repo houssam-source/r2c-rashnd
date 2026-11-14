@@ -465,8 +465,8 @@ class IGController(HybridController):
         self.grid.decay(self.rf.rf.jammer_mode)
         if t % self.p.T_ist == 0:
             jmap = self.grid.map_position()
-            self._belief_err.append(
-                float(np.linalg.norm(jmap - self.rf.jammer_pos)))
+            jtrue = self.rf._jammer_position_peek(t, pos, active)
+            self._belief_err.append(float(np.linalg.norm(jmap - jtrue)))
         saved = self.repel_gain
         if t % self.p.T_ist == 0 and self._pending_action == "flee/reposition":
             self.repel_gain = saved * 1.5
@@ -479,7 +479,10 @@ class IGController(HybridController):
         gf = self.grid
         pr = gf.prob()
         # ch0: jammer cell neighborhood + strided background sample
-        jc = gf.cell_of(self.rf.jammer_pos.reshape(1, 2))[0]
+        # (truth from the simulator's position function: the stored
+        # jammer_pos attr is stale in sweep mode by design)
+        jtrue = self.rf._jammer_position_peek(self.steps, env.pos, env.active)
+        jc = gf.cell_of(np.asarray(jtrue).reshape(1, 2))[0]
         nb, nb_truth = [], []
         for dy in range(-3, 4):
             for dx in range(-3, 4):

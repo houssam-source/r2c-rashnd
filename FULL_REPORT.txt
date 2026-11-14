@@ -1,0 +1,136 @@
+FULL PROJECT REPORT - R2C-RASHND Hybrid Reproduction & Extension
+================================================================
+Date: 2026-11-09
+Repo: github.com/houssam-source/r2c-rashnd (master @ cc84607)
+Compute: server ssh -p 2225 houssam@10.13.0.201 (Kaggle abandoned - too slow)
+
+
+---------------------------------------------------------------
+WHERE THINGS STAND (THE 5 PLANNED STEPS)
+---------------------------------------------------------------
+1. FieldController pre-registered tuning (n=100) .......... DONE
+      -> results/preregistration_field_tune.md
+2. PHY/SDR replication of E4 throughput ................... DONE (GNU Radio version)
+      -> results/PHY_VALIDATION.md ; ns-3 version NOT done
+3. v5+terrain / field+surge combinations .................. DONE
+      -> results/combo_terrain.csv, results/combo_field_edges.csv
+4. Gazebo live run (H1) ................................... MOSTLY DONE (2026-11-09)
+5. R2C author query ....................................... NOT STARTED (only user can send)
+
+
+---------------------------------------------------------------
+WHAT WAS BUILT
+---------------------------------------------------------------
+
+1. Reproduction codebase (r2c/)
+   - Full R2C stack: ISE / IST / AWF
+   - RF-hybrid extension: RF layer (jammer constant/sweep/reactive),
+     hybrid controller variants v2-v8, A* belief-dissemination search,
+     camera-construct visibility model (visibility.py),
+     decentralized FieldController
+
+2. Experiment framework (experiments/)
+   - Preregistration-first workflow, paired n=100 runs
+   - Confirmatory statistics (results/CONFIRMATORY_*.md)
+   - Seeded torch; parallel --workers path verified CSV-identical to serial
+
+3. Key quantitative results (n=100, tight confidence intervals)
+   - v2 hybrid vs R2C: -20..-24pp recovery for +5-6% throughput
+     (CORRECTED METRIC 2026-11-11: the old all-pairs sum, 2.5-6 Gbps,
+     exceeded the per-radio ceiling; the earlier "+24-46%" and any
+     "Tbps" figures were artifacts of that bug) -> a real Pareto trade
+   - v5: +15pp recovery on jammer_move (p=0.0026)
+     -> the one robust hybrid gain
+   - FieldController: recovery 0.58 vs R2C 0.79 vs v5 0.63-0.66
+     -> H1 (field beats R2C) NOT supported
+   - Occluded terrain: v4 camera-construct 0.62 (n=50 corrected recompute;
+     the earlier +20pp at n=30 retracted as exploratory)
+     vs 0.50 blind/v5, vs 0.38 field; terrain throughputs 12.8-22.6 Mbps
+     -> design partition: v4=occlusion, field=moving-world flat, v5=balanced
+   - Field holds up on flat moving-world edges:
+     power_surge / jammer_move / fast_sweep all 0.70, beats v5
+
+4. PHY validation (build/phy_validate.py, GNU Radio 3.9 on server)
+   - 400 QPSK+CRC packets per point
+   - Real packet-delivery gate at ~12.5 dB SINR vs the model's 10 dB
+     -> SINR-grid model slightly overestimates link reliability (2.5 dB gap)
+   - Figure: results/figs/pub/phy_validation.png
+   - Gotcha found and worked around: GNU Radio channel_model silently drops
+     8 symbols of filter delay
+
+5. FastAPI inference endpoint (api/)
+   - Model-state check endpoint (built early in the project)
+
+6. Gazebo live-run infrastructure (gazebo/)
+   - World SDF: 1000x1000 m arena, jammer marker at (500,500)
+   - VelocityControl drone spawner
+   - ROS-free SwarmBridge core
+   - TODAY'S BREAKTHROUGH (step 4):
+     The gz<->ROS bridge had never delivered a single message. Root cause
+     found by reading gz-transport source: the conda env pairs
+     gz-sim 10.6 / libgz-transport 15 with ros-humble-ros-gz-bridge built
+     for an OLDER Gazebo. Their discovery protocols are incompatible
+     ("Unknown message type [8]/[9]" in Discovery.hh), so parameter_bridge
+     can NEVER work in this environment. The ROS CLI daemon is also flaky.
+     FIX: bypassed ROS entirely. Wrote a ~100-line C++ stdio shim
+     (build/gz_shim.cc, compiled against the env's own transport-15 headers)
+     plus a Python driver (build/h1_live_run.py) running the field
+     controller against live gz physics at 10 Hz.
+   - LIVE RUN COMPLETED (120 s, 5 drones):
+     7,056 pose frames received, 1,176 control steps, commands reaching
+     the drones, initial formation correction of 0.24-0.46 m executed by
+     gz physics, then station-keeping. Closed loop verified end-to-end.
+
+
+---------------------------------------------------------------
+LIMITATIONS
+---------------------------------------------------------------
+
+Model fidelity
+  - Sim RF stack is a SINR grid, not a network simulator: no MAC contention,
+    packet queues, or routing. The GNU Radio study bounds this (2.5 dB gate
+    gap) but the ns-3/SDR E4 throughput replication exists only in GNU Radio
+    form.
+  - Terrain/occlusion is geometric line-of-sight only: no diffraction,
+    reflection, or multipath; "urban" is abstracted.
+  - Drones are kinematic (VelocityControl spheres): no PX4/MAVROS flight
+    dynamics, no battery/energy model in the gz loop.
+
+Controller science
+  - Field variant still loses to plain R2C on recovery (0.58 vs 0.79);
+    its wins are niche (flat moving-world edges, +5-15pp).
+  - v6/v7/v8 were null; one v4 claim (+20pp) was retracted as exploratory.
+  - The 'hops' tuning knob is a no-op (not wired into relay construction);
+    flee harm-gate never opens in E4-constant.
+  - Tuning is sensitive: eta=0.30 collapses recovery to 0.13.
+
+Gazebo demo (honest caveat)
+  - The run verifies plumbing and closed-loop control, but drones reached a
+    force equilibrium in ~1 s and then held station (graph connected under
+    the 180 m boost range; jammer 300+ m away). No dramatic sustained motion.
+  - A convincing H1 demo needs reconfigured initial conditions (disconnected
+    spawn, or swarm placed near the jammer): one more run, not new engineering.
+  - gz<->ROS bridging is PERMANENTLY unavailable in this conda env (version
+    mismatch); the custom shim replaces it. ros2cli daemon remains flaky
+    (rclpy itself is fine).
+  - Only 5 drones tested live (numeric sims go to 20-100).
+
+Reproducibility / external
+  - Original R2C paper omits construction details (boost range, virtual-edge
+    selection, GCN training schedule, AWF calibration, REC normalization);
+    our 3x high-failure deviation cannot be fully attributed without the
+    authors' answer. Query email to be drafted for the user to send
+    (step 5, untouched).
+  - Kaggle training abandoned (sessions too slow/limited); all heavy compute
+    runs on the user's server via password SSH.
+  - results/ directory is gitignored (local only).
+
+
+---------------------------------------------------------------
+BOTTOM LINE
+---------------------------------------------------------------
+The system is fully built, stress-tested, PHY-validated, and now
+physics-validated in Gazebo. The science story is: the hybrid trades
+recovery for throughput, with narrow but real wins for v5 (moving jammers)
+and v4 (occluded terrain) - not the originally hoped uniform +5-15%
+improvement.

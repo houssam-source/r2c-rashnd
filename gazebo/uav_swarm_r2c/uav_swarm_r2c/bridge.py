@@ -41,7 +41,21 @@ class SwarmBridge:
         self.controller_kind = controller
         self.jammer_mode = jammer_mode
         self.env = _BareEnv(self.p, n)
-        if controller == "hybrid":
+        if controller == "v9" or variant.startswith("v9"):
+            from r2c.ig import IGController
+            lam = 1.0
+            spec = variant if variant.startswith("v9") else "v9"
+            if "(" in spec:
+                inner = spec.split("(", 1)[1].split(")")[0]
+                for kv in inner.split(","):
+                    if "=" in kv:
+                        k, v = kv.split("=")
+                        if k.strip() == "lam":
+                            lam = float(v)
+            self.ctrl = IGController(
+                self.p, rf_p=RFParams(jammer_mode=jammer_mode, seed=seed),
+                seed=seed, lam=lam)
+        elif controller == "hybrid":
             self.ctrl = HybridController(
                 self.p, rf_p=RFParams(jammer_mode=jammer_mode, seed=seed),
                 variant=variant)

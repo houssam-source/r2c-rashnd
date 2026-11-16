@@ -26,9 +26,17 @@ from r2c.rf import RFLayer, RFParams
 def trial(p, rf_p, failure_ratio, controller, variant):
     env = SwarmEnvironment(p, p.n_random, "random")
     rf = RFLayer(p, rf_p)
-    if controller == "v9" or variant == "v9":
+    if controller == "v9" or variant == "v9" or variant.startswith("v9("):
         from r2c.ig import IGController
-        ctrl = IGController(p, rf_p=rf_p, seed=p.seed)
+        lam = 1.0
+        if variant.startswith("v9("):
+            inner = variant.split("(", 1)[1].split(")")[0]
+            for kv in inner.split(","):
+                if "=" in kv:
+                    k, v = kv.split("=")
+                    if k.strip() == "lam":
+                        lam = float(v)
+        ctrl = IGController(p, rf_p=rf_p, seed=p.seed, lam=lam)
     elif controller == "field" or variant.startswith("field"):
         from r2c.field import FieldController
         kw = {}

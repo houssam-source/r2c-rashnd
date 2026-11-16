@@ -176,3 +176,46 @@ calibration flag, not a hypothesis test.
   is unchanged.
 - Confirmatory per-seed writers gain the diagnostic columns at
   confirmatory time (schema additive only).
+
+
+---
+
+# Stage A results (locked 2026-11-16, after runs)
+
+**Campaign:** server (48 workers), n=30 paired seeds per cell.
+Files: `results/stageA_e4_v9lam.csv` (E4-constant, λ grid + R2C/v2),
+`results/stageA_terrain_v9lam.csv` (occluded terrain, λ grid + blind),
+`results/stageA_move_v9lam.csv` (AMENDMENT, pre-confirmatory: E4-sweep +
+E4-reactive λ grid — the preregistered scenarios turned out to be
+degenerate for λ; amendment logged below).
+
+**Outcome 1 (preregistered scenarios):** λ has NO effect on recovery or
+throughput — all five λ values are BIT-IDENTICAL in E4-constant and in
+occluded terrain. Diagnosis: E4-constant saturates the belief pre-t1
+(dH ≈ 0, ig_net = 0.000); the terrain arena (N=30, AREA=200) keeps the
+swarm in one cluster, where the plan early-returns and v9 degenerates to
+the v3b path exactly.
+
+**Outcome 2 (amended moving-jammer scenarios):** ig_net is λ-sensitive
+(0.072 → 0.064 → 0.035 → 0.000 across λ=0/1/10/100; c_dis metered
+identically) — the scoring and pricing machinery works — yet recovery and
+throughput remain BIT-IDENTICAL for all λ. Diagnosis: the preregistered
+action EFFECTS never alter velocity: hold ≡ standard bridging when no
+corridors exist, switch only double-observes, relay needs passable
+corridors, and flee (the only motion effect, repulsion ×1.5) is never the
+argmax because switch's predicted dH dominates at λ=0 and hold's zero cost
+dominates at λ>0.
+
+**Selection per the preregistered rule:** all λ tie on the primary and the
+tie-break → **λ = 1.0 retained** (middle of the explored grid, equal to
+the provisional value; no post-hoc fitting occurred because there is
+nothing to fit).
+
+**Consequence for H-A (flagged for user review before any confirmatory
+run):** as mechanized, the IG layer prices and meters information but does
+not change motion in the tested regimes, so a v9-vs-v4/v5 recovery
+advantage cannot come from λ. Options: (a) proceed to confirmatory with
+H-B only; (b) amend the phase-3 action effects (e.g., flee as a first-
+class motion primitive, relay-driven repositioning) — this is a design
+change requiring a preregistration revision and a fresh Stage A. No
+confirmatory n=100 has been run.

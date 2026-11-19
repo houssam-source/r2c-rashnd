@@ -115,3 +115,22 @@ itself (bridging=v2 order, beliefs=search) never supported. This
 strengthens, not weakens, the negative-result conclusion: the optimistic
 band was testable, was tested, and was rejected by the method's own
 confirmatory data.
+
+## 6. Pooled confirmatory tests (family α = 0.0167)
+
+| Test | Discordant pairs | McNemar p | Verdict at α=0.0167 |
+|---|---|---|---|
+| H1: v3b vs v2 (6 informative cells, 600 pairs) | v3b-only 42 / v2-only 78 | **0.0013** | **REJECTED — v3b significantly WORSE** |
+| v3a vs v2 (order only) | 56 / 56 | 1.0000 | exactly neutral |
+| H3: v3 full vs v2 | v3-only 20 / v2-only 49 | **0.0006** | CONFIRMED negative |
+
+The pooled H1 result strengthens the §1 finding from "fails to beat" to
+"significantly degrades": belief-carrying dissemination with v2 bridging
+costs ~6 pp of recovery on average (p = 0.0013). Combined with §5 (the
+v3b expectation band rejected by its own data) the negative-result
+conclusion is now significant, not merely directional.
+
+## 7. Experiment completeness status
+
+Battery v2 (rerun for cov_end + adopt/valve counters + EC2–EC7 hooks)
+launched 2026-11-19 06:14 UTC; results append to this file on pull.

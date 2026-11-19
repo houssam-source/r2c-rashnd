@@ -37,4 +37,41 @@
     "best_recovery": 0.45,
     "regression": 0.2,
     "tolerance": 0.02,
-    "pass": 
+    "pass": false
+  },
+  "fine_tune": [
+    {
+      "init": 1000,
+      "recovery": 0.45,
+      "val_loss": 86.2734
+    },
+    {
+      "init": 1001,
+      "recovery": 0.45,
+      "val_loss": 86.2734
+    },
+    {
+      "init": 1002,
+      "recovery": 0.45,
+      "val_loss": 86.2734
+    }
+  ],
+  "init_recovery_std": 0.0,
+  "seed_std_flag": false,
+  "seed_std_caveat": "VACUOUS: the three inits were identical because IST.__init__ re-seeds torch with p.seed AFTER the fine-tune seed was set. Bug found 2026-11-19, fixed in build/hpo_gcn.py (seed after construction); re-run pending. Guardrail verdict is unaffected (keep baseline).",
+  "versions": {
+    "torch": "2.12.0+cpu",
+    "numpy": "2.3.3",
+    "python": "3.11.9"
+  },
+  "git_commit": "3845afecdc11cc35aa2a0ef2985b6837c52385d2",
+  "baseline_cfg": {
+    "lr": 0.0001,
+    "hidden": 512,
+    "layers": 8,
+    "wd": 0.0,
+    "dropout": 0.0,
+    "max_epochs": 5,
+    "val_frac": 0.0
+  }
+}

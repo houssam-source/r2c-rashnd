@@ -161,7 +161,7 @@ def main():
                 c, mode, i, fails = task
                 r = results[idx]
                 w.writerow([i, mode, c, fails]
-                           + [f"{r[k]:.6f}" for k in extra])
+                           + [f"{r.get(k, float('nan')):.6f}" for k in extra])
     with open(args.out, "w", newline="") as f:
         w = csv.writer(f)
         w.writerow(["jammer", "controller", "metric", "mean", "std",

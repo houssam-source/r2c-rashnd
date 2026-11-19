@@ -85,3 +85,33 @@ H1 fails at n=100 → **negative-result reframing stands**: dissemination
 is cheaper (0.4× sensing) but not better; planning is neutral-to-harmful.
 Workshop-tier framing per the master document; no post-hoc adjustments
 were made to reach a positive result.
+
+## 5. Expected-vs-observed comparison (master doc Part II bands)
+
+Observed at the protocol failure point (fr=50, n=100 archived + guardrail-
+verified; v3a/v3 from e4_variants n=50 same seeds):
+
+| Arm | Mode | Expected band | Observed | Verdict |
+|---|---|---|---|---|
+| R2C | all | 0.75–0.78 | 0.79 | ABOVE (benign) |
+| v2 | all | 0.44–0.50 | 0.55–0.59 | ABOVE (benign) |
+| v3a | all | 0.45–0.53 | 0.56–0.68 | ABOVE (benign) |
+| **v3b** | all | **0.66–0.78** | **0.58–0.63** | **BELOW in all 3 modes** |
+| v3 | all | 0.45–0.53 | 0.48–0.52 | IN |
+
+Throughput (corrected accounting): v2 vs R2C +5.1–5.9% — IN the expected
++4–8% band. **v3b vs v2 +0.3–0.8% — far BELOW the expected +8–25%**
+(expectation written pre-correction; the corrected metric was marked for
+re-certification in the master doc and here fails).
+
+**Reading.** The expectation matrix was miscalibrated for exactly one arm
+— v3b, the method arm — whose band (0.66–0.78) is inconsistent with every
+observed dataset (0.58–0.63 at fr50; 0.84 at fr40; 0.18–0.20 at fr60) and
+with the preregistered H1 gap (+0.23…+0.26, observed −0.04…−0.08). All
+other arms' bands contain or sit below the observations. Recorded as a
+preregistration-calibration finding: the v3b expectation appears to trace
+to pre-ablation exploratory claims (V3-era) that the v3b ablation cell
+itself (bridging=v2 order, beliefs=search) never supported. This
+strengthens, not weakens, the negative-result conclusion: the optimistic
+band was testable, was tested, and was rejected by the method's own
+confirmatory data.

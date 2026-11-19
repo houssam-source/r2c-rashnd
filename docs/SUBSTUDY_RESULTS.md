@@ -134,3 +134,37 @@ conclusion is now significant, not merely directional.
 
 Battery v2 (rerun for cov_end + adopt/valve counters + EC2–EC7 hooks)
 launched 2026-11-19 06:14 UTC; results append to this file on pull.
+
+## 8. Battery v2 completion (202-11-19): guardrail, mechanism, coverage, full edge matrix
+
+**Guardrail (second, real): PASS.** After fixing the per-trial writer
+(R2C rows lack optional counter keys), all four fr suites rerun; recovery/
+REC/quality rows are bit-identical to battery v1 on every cell (0/180
+mismatches). Instrumentation confirmed trajectory-neutral.
+
+**Mechanism for the H1 failure (adopt/valve rates, constant mode).**
+v3a = 0 adoptions by design (v2 flooding). v3b per episode: adoptions
+0.1 → 0.5 → 2.4 → 4.5 and safety-valve re-measures 0.5 → 0.7 → 1.5 → 5.7
+across fr20→fr80. At high fragmentation the propagated beliefs mostly FAIL
+the conf_min gate and trigger local re-sensing: the swarm pays BOTH the
+frontier dissemination cost AND the local re-measure cost — the confidence
+mechanism rejects propagated beliefs exactly in the regimes where they are
+most needed. This is the quantitative mechanism behind "dissemination
+doesn't pay" at 0.4x budget.
+
+**Coverage (cov_end, constant):** ordering mirrors recovery — R2C best
+(0.974/0.962/0.903/0.703), hybrids statistically indistinguishable among
+themselves (within 0.01-0.013). No arm buys coverage with its sensing.
+
+**Full edge matrix (n=50, 16 scenarios):** v3b <= v2 in 12/16 cells; the
+v3b advantage is confined to dynamics cells (ec2_fast_reactive +0.12,
+jammer_move/fast_sweep), where v3a (order only) matches or beats v3b —
+attributing the gain to re-planning cadence, not belief-carrying.
+**EC5 zero-contrast: all belief-driven hybrids collapse (v2 0.12, v3b
+0.18) vs R2C 0.76** — the boundary condition for the abstract's scope
+sentence. EC7 poisoned origin: absorbed (v3b 0.58 vs v2 0.54) — the
+confidence valve + staleness demotion work as designed.
+
+**Experiment status: COMPLETE** per master doc steps 1-3 (EC2-EC7
+implemented and run; analysis week remaining: family-adjusted write-up,
+budget-curve figures, reproducibility package).

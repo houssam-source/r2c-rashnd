@@ -93,12 +93,15 @@ def trial(p, rf_p, failure_ratio, controller, variant):
         "thr_mbps": thr_sum / max(steps, 1),
         "thr_per_drone_mbps": pd_sum / max(steps, 1),
         "k_max": float(k_max),
+        "cov_end": float(env.coverage()),
         "mean_q": q_sum / max(steps, 1),
         "lambda2_gated": algebraic_connectivity(gadj),
     }
     if hasattr(ctrl, "counters"):
         out["sensing_events"] = float(ctrl.counters["sensing_events"])
         out["replans"] = float(ctrl.counters["replans"])
+        out["adoptions"] = float(ctrl.counters.get("adoptions", 0))
+        out["valve_remeasures"] = float(ctrl.counters.get("valve_remeasures", 0))
     else:
         out["sensing_events"] = np.nan
         out["replans"] = np.nan

@@ -125,6 +125,95 @@ SCENARIOS = {
 }
 
 
+
+def hook_fast_reactive(env, rf, ctrl, t, p, rng):
+    pass  # configured pre-run (jammer_mode=reactive, jammer_speed=8)
+
+
+def hook_dual_jammer(env, rf, ctrl, t, p, rng):
+    """EC3 colluding dual jammers: the 5 background emitters surge to
+    colluder power (single-jammer RF layer; flagged approximation)."""
+    if t == 200:
+        for r in (rf, getattr(ctrl, "rf", None)):
+            if r is not None:
+                r.rf.interferer_power_dbm = 30.0
+                r._static_key = None
+
+
+def hook_head_death(env, rf, ctrl, t, p, rng):
+    """EC4 cluster-head death: kill the drone nearest the active centroid
+    and its 3 nearest neighbours at t=200."""
+    if t == 200:
+        act = np.where(env.active)[0]
+        if len(act) > 8:
+            ctr = env.pos[act].mean(axis=0)
+            order = act[np.argsort(np.linalg.norm(env.pos[act] - ctr,
+                                                  axis=1))]
+            env.active[order[:4]] = False
+            env._dist_cache = None
+            env._adj_cache = None
+
+
+def hook_zero_contrast(env, rf, ctrl, t, p, rng):
+    """EC5 zero-contrast: jammer dropped below the noise floor, so sensed
+    power carries no bearing gradient (all readings equal)."""
+    if t == 0:
+        for r in (rf, getattr(ctrl, "rf", None)):
+            if r is not None:
+                r.rf.jammer_power_dbm = -10.0
+
+
+def hook_corridor_collapse(env, rf, ctrl, t, p, rng):
+    """EC6 corridor collapse: kill the 3 active drones nearest the
+    boundary midpoint of the two largest components at t=200."""
+    if t == 200:
+        act = np.where(env.active)[0]
+        d = env.distances()
+        adj = ((d <= p.r_c)).astype(float)
+        np.fill_diagonal(adj, 0.0)
+        ncomp, labels = cg.connected_components(adj[act][:, act],
+                                                directed=False)
+        if ncomp >= 2:
+            sizes = np.bincount(labels, minlength=ncomp)
+            top2 = np.argsort(sizes)[-2:]
+            a = act[labels == top2[0]]
+            b = act[labels == top2[1]]
+            D = d[np.ix_(a, b)]
+            i, j = np.unravel_index(np.argmin(D), D.shape)
+            mid = 0.5 * (env.pos[a[i]] + env.pos[b[j]])
+            near = act[np.argsort(np.linalg.norm(env.pos[act] - mid,
+                                                 axis=1))]
+            env.active[near[:3]] = False
+            env._dist_cache = None
+            env._adj_cache = None
+
+
+def hook_poisoned_origin(env, rf, ctrl, t, p, rng):
+    """EC7 poisoned origin: the controller's own sensing reads a jammer
+    displaced +300 m in x for steps [T1, T1+10); the metrics RF layer is
+    untouched (clean evaluation of corrupted sensing)."""
+    crf = getattr(ctrl, "rf", None)
+    if crf is None:
+        return
+    if t == T1:
+        crf.jammer_pos = crf.jammer_pos + np.array([300.0, 0.0])
+        crf._static_key = None
+    elif t == T1 + 10:
+        crf.jammer_pos = crf.jammer_pos - np.array([300.0, 0.0])
+        crf._static_key = None
+
+
+SCENARIOS.update({
+    "ec2_fast_reactive":   {"inject": 0.5, "hook": hook_fast_reactive,
+                            "jammer_mode": "reactive", "jammer_speed": 8.0},
+    "ec3_dual_jammer":     {"inject": 0.5, "hook": hook_dual_jammer},
+    "ec4_head_death":      {"inject": 0.5, "hook": hook_head_death},
+    "ec5_zero_contrast":   {"inject": 0.5, "hook": hook_zero_contrast},
+    "ec6_corridor_collapse": {"inject": 0.5, "hook": hook_corridor_collapse},
+    "ec7_poisoned_origin": {"inject": 0.5, "hook": hook_poisoned_origin},
+})
+
+
 def trial(scenario, controller, seed):
     spec = SCENARIOS[scenario]
     p = R2CParams(seed=seed)
@@ -132,7 +221,9 @@ def trial(scenario, controller, seed):
         rf_p = RFParams(jammer_mode="sweep", seed=seed,
                         sweep_period=spec["sweep_period"])
     else:
-        rf_p = RFParams(jammer_mode="constant", seed=seed)
+        rf_p = RFParams(jammer_mode=spec.get("jammer_mode", "constant"),
+                        seed=seed,
+                        jammer_speed=spec.get("jammer_speed", 2.0))
     env = SwarmEnvironment(p, p.n_random, "random")
     if "deploy_offset" in spec:
         env.pos = env.pos * 0.3 + np.array(spec["deploy_offset"])

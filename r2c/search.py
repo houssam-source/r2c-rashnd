@@ -143,8 +143,10 @@ class BeliefStore:
         if conf >= self.conf_min:
             self.store[key] = dict(vec=vec.copy(), conf=float(conf),
                                    age=int(age), source="adopted")
+            self.counters["adoptions"] = self.counters.get("adoptions", 0) + 1
         else:
             self.store[key] = dict(vec=None, conf=0.0, age=0, source="local")
+            self.counters["valve_remeasures"] =                 self.counters.get("valve_remeasures", 0) + 1
 
     def get(self, key):
         return self.store.get(key)

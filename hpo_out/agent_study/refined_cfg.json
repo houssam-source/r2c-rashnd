@@ -1,0 +1,850 @@
+{
+  "selection_rule": "among configs with mean recovery on seeds 0-4 within 0.02 of baseline mean on the same seeds, pick lowest mean val loss",
+  "note": "selected by rule: within 0.02 recovery of baseline on seeds 0-4, lowest mean val loss",
+  "baseline_fit_seeds_0_4": {
+    "val_loss_mean": 86.22978038106645,
+    "val_loss_median": 86.34403171709606,
+    "recovery_mean": 1.0,
+    "rec_mean": 0.271,
+    "thr_mbps_mean": 989.3979933110368,
+    "per_seed": {
+      "0": {
+        "val_loss": 85.89661620770183,
+        "n_val": 7,
+        "recovered": 1.0,
+        "REC": 0.0175,
+        "thr_mbps": 754.314381270903,
+        "thr_per_drone_mbps": 3.7715719063545166
+      },
+      "1": {
+        "val_loss": 86.74912511025157,
+        "n_val": 7,
+        "recovered": 1.0,
+        "REC": 0.3775,
+        "thr_mbps": 883.2441471571906,
+        "thr_per_drone_mbps": 4.416220735785938
+      },
+      "2": {
+        "val_loss": 86.34403171709606,
+        "n_val": 7,
+        "recovered": 1.0,
+        "REC": 0.2975,
+        "thr_mbps": 1104.180602006689,
+        "thr_per_drone_mbps": 5.5209030100334395
+      },
+      "3": {
+        "val_loss": 86.378100627235,
+        "n_val": 7,
+        "recovered": 1.0,
+        "REC": 0.66,
+        "thr_mbps": 1039.6655518394648,
+        "thr_per_drone_mbps": 5.198327759197335
+      },
+      "4": {
+        "val_loss": 85.78102824304786,
+        "n_val": 7,
+        "recovered": 1.0,
+        "REC": 0.0025,
+        "thr_mbps": 1165.5852842809365,
+        "thr_per_drone_mbps": 5.827926421404694
+      }
+    }
+  },
+  "grid": [
+    {
+      "lr": 5e-05,
+      "hidden": 512,
+      "layers": 8,
+      "wd": 0.0,
+      "dropout": 0.0,
+      "max_epochs": 5,
+      "val_frac": 0.0,
+      "fit_val_loss_mean": 86.39353352231639,
+      "fit_val_loss_median": 86.35352620908192,
+      "fit_recovery_mean": 0.8,
+      "fit_rec_mean": 0.33299999999999996,
+      "fit_thr_mbps_mean": 1002.9832775919733,
+      "per_seed_fit": {
+        "0": {
+          "val_loss": 86.35352620908192,
+          "n_val": 7,
+          "recovered": 1.0,
+          "REC": 0.025,
+          "thr_mbps": 802.876254180602,
+          "thr_per_drone_mbps": 4.014381270903015
+        },
+        "1": {
+          "val_loss": 86.75692848648343,
+          "n_val": 7,
+          "recovered": 1.0,
+          "REC": 0.29,
+          "thr_mbps": 942.9431438127091,
+          "thr_per_drone_mbps": 4.714715719063543
+        },
+        "2": {
+          "val_loss": 86.67854839776244,
+          "n_val": 7,
+          "recovered": 0.0,
+          "REC": 1.0,
+          "thr_mbps": 1038.6622073578596,
+          "thr_per_drone_mbps": 5.193311036789291
+        },
+        "3": {
+          "val_loss": 86.2773896583489,
+          "n_val": 7,
+          "recovered": 1.0,
+          "REC": 0.3475,
+          "thr_mbps": 1036.3545150501673,
+          "thr_per_drone_mbps": 5.18177257525083
+        },
+        "4": {
+          "val_loss": 85.90127485990524,
+          "n_val": 7,
+          "recovered": 1.0,
+          "REC": 0.0025,
+          "thr_mbps": 1194.0802675585285,
+          "thr_per_drone_mbps": 5.9704013377926275
+        }
+      }
+    },
+    {
+      "lr": 5e-05,
+      "hidden": 512,
+      "layers": 8,
+      "wd": 1e-05,
+      "dropout": 0.0,
+      "max_epochs": 5,
+      "val_frac": 0.0,
+      "fit_val_loss_mean": 86.31804836647851,
+      "fit_val_loss_median": 86.32104822567531,
+      "fit_recovery_mean": 0.8,
+      "fit_rec_mean": 0.3245,
+      "fit_thr_mbps_mean": 1005.5919732441471,
+      "per_seed_fit": {
+        "0": {
+          "val_loss": 86.32104822567531,
+          "n_val": 7,
+          "recovered": 1.0,
+          "REC": 0.0325,
+          "thr_mbps": 820.0334448160535,
+          "thr_per_drone_mbps": 4.100167224080265
+        },
+        "1": {
+          "val_loss": 86.424795457295,
+          "n_val": 7,
+          "recovered": 1.0,
+          "REC": 0.2275,
+          "thr_mbps": 986.8896321070234,
+          "thr_per_drone_mbps": 4.934448160535122
+        },
+        "2": {
+          "val_loss": 86.68164214704719,
+          "n_val": 7,
+          "recovered": 0.0,
+          "REC": 1.0,
+          "thr_mbps": 1025.3177257525083,
+          "thr_per_drone_mbps": 5.126588628762523
+        },
+        "3": {
+          "val_loss": 86.26870750742299,
+          "n_val": 7,
+          "recovered": 1.0,
+          "REC": 0.36,
+          "thr_mbps": 1047.8929765886287,
+          "thr_per_drone_mbps": 5.239464882943126
+        },
+        "4": {
+          "val_loss": 85.89404849495206,
+          "n_val": 7,
+          "recovered": 1.0,
+          "REC": 0.0025,
+          "thr_mbps": 1147.8260869565217,
+          "thr_per_drone_mbps": 5.739130434782578
+        }
+      }
+    },
+    {
+      "lr": 5e-05,
+      "hidden": 512,
+      "layers": 8,
+      "wd": 0.0001,
+      "dropout": 0.0,
+      "max_epochs": 5,
+      "val_frac": 0.0,
+      "fit_val_loss_mean": 86.26726601762431,
+      "fit_val_loss_median": 86.27486889702934,
+      "fit_recovery_mean": 0.8,
+      "fit_rec_mean": 0.391,
+      "fit_thr_mbps_mean": 1024.2742474916388,
+      "per_seed_fit": {
+        "0": {
+          "val_loss": 86.2086735538074,
+          "n_val": 7,
+          "recovered": 1.0,
+          "REC": 0.025,
+          "thr_mbps": 781.8060200668897,
+          "thr_per_drone_mbps": 3.9090301003344496
+        },
+        "1": {
+          "val_loss": 86.27486889702934,
+          "n_val": 7,
+          "recovered": 1.0,
+          "REC": 0.4225,
+          "thr_mbps": 1171.304347826087,
+          "thr_per_drone_mbps": 5.856521739130429
+        },
+        "2": {
+          "val_loss": 86.68175988112178,
+          "n_val": 7,
+          "recovered": 0.0,
+          "REC": 1.0,
+          "thr_mbps": 1032.4414715719063,
+          "thr_per_drone_mbps": 5.162207357859529
+        },
+        "3": {
+          "val_loss": 86.27742828854493,
+          "n_val": 7,
+          "recovered": 1.0,
+          "REC": 0.505,
+          "thr_mbps": 985.886287625418,
+          "thr_per_drone_mbps": 4.929431438127082
+        },
+        "4": {
+          "val_loss": 85.89359946761813,
+          "n_val": 7,
+          "recovered": 1.0,
+          "REC": 0.0025,
+          "thr_mbps": 1149.933110367893,
+          "thr_per_drone_mbps": 5.749665551839469
+        }
+      }
+    },
+    {
+      "lr": 0.0001,
+      "hidden": 512,
+      "layers": 8,
+      "wd": 0.0,
+      "dropout": 0.0,
+      "max_epochs": 5,
+      "val_frac": 0.0,
+      "fit_val_loss_mean": 86.22978038106645,
+      "fit_val_loss_median": 86.34403171709606,
+      "fit_recovery_mean": 1.0,
+      "fit_rec_mean": 0.271,
+      "fit_thr_mbps_mean": 989.3979933110368,
+      "per_seed_fit": {
+        "0": {
+          "val_loss": 85.89661620770183,
+          "n_val": 7,
+          "recovered": 1.0,
+          "REC": 0.0175,
+          "thr_mbps": 754.314381270903,
+          "thr_per_drone_mbps": 3.7715719063545166
+        },
+        "1": {
+          "val_loss": 86.74912511025157,
+          "n_val": 7,
+          "recovered": 1.0,
+          "REC": 0.3775,
+          "thr_mbps": 883.2441471571906,
+          "thr_per_drone_mbps": 4.416220735785938
+        },
+        "2": {
+          "val_loss": 86.34403171709606,
+          "n_val": 7,
+          "recovered": 1.0,
+          "REC": 0.2975,
+          "thr_mbps": 1104.180602006689,
+          "thr_per_drone_mbps": 5.5209030100334395
+        },
+        "3": {
+          "val_loss": 86.378100627235,
+          "n_val": 7,
+          "recovered": 1.0,
+          "REC": 0.66,
+          "thr_mbps": 1039.6655518394648,
+          "thr_per_drone_mbps": 5.198327759197335
+        },
+        "4": {
+          "val_loss": 85.78102824304786,
+          "n_val": 7,
+          "recovered": 1.0,
+          "REC": 0.0025,
+          "thr_mbps": 1165.5852842809365,
+          "thr_per_drone_mbps": 5.827926421404694
+        }
+      }
+    },
+    {
+      "lr": 0.0001,
+      "hidden": 512,
+      "layers": 8,
+      "wd": 1e-05,
+      "dropout": 0.0,
+      "max_epochs": 5,
+      "val_frac": 0.0,
+      "fit_val_loss_mean": 86.4439029738307,
+      "fit_val_loss_median": 86.58023937259402,
+      "fit_recovery_mean": 0.6,
+      "fit_rec_mean": 0.5595,
+      "fit_thr_mbps_mean": 954.5217391304348,
+      "per_seed_fit": {
+        "0": {
+          "val_loss": 86.58023937259402,
+          "n_val": 7,
+          "recovered": 0.0,
+          "REC": 1.0,
+          "thr_mbps": 769.4648829431438,
+          "thr_per_drone_mbps": 3.8473244147157075
+        },
+        "1": {
+          "val_loss": 86.67614322049278,
+          "n_val": 7,
+          "recovered": 1.0,
+          "REC": 0.38,
+          "thr_mbps": 876.3210702341137,
+          "thr_per_drone_mbps": 4.381605351170575
+        },
+        "2": {
+          "val_loss": 86.92205575534275,
+          "n_val": 7,
+          "recovered": 0.0,
+          "REC": 1.0,
+          "thr_mbps": 990.3010033444816,
+          "thr_per_drone_mbps": 4.951505016722408
+        },
+        "3": {
+          "val_loss": 86.23800789884159,
+          "n_val": 7,
+          "recovered": 1.0,
+          "REC": 0.415,
+          "thr_mbps": 908.9297658862877,
+          "thr_per_drone_mbps": 4.54464882943145
+        },
+        "4": {
+          "val_loss": 85.80306862188237,
+          "n_val": 7,
+          "recovered": 1.0,
+          "REC": 0.0025,
+          "thr_mbps": 1227.591973244147,
+          "thr_per_drone_mbps": 6.137959866220732
+        }
+      }
+    },
+    {
+      "lr": 0.0001,
+      "hidden": 512,
+      "layers": 8,
+      "wd": 0.0001,
+      "dropout": 0.0,
+      "max_epochs": 5,
+      "val_frac": 0.0,
+      "fit_val_loss_mean": 86.22978683986834,
+      "fit_val_loss_median": 86.23267343001706,
+      "fit_recovery_mean": 1.0,
+      "fit_rec_mean": 0.1825,
+      "fit_thr_mbps_mean": 1004.3678929765887,
+      "per_seed_fit": {
+        "0": {
+          "val_loss": 85.87490870271411,
+          "n_val": 7,
+          "recovered": 1.0,
+          "REC": 0.025,
+          "thr_mbps": 778.695652173913,
+          "thr_per_drone_mbps": 3.893478260869575
+        },
+        "1": {
+          "val_loss": 86.96368621928352,
+          "n_val": 7,
+          "recovered": 1.0,
+          "REC": 0.305,
+          "thr_mbps": 990.1003344481605,
+          "thr_per_drone_mbps": 4.950501672240794
+        },
+        "2": {
+          "val_loss": 86.27356948171344,
+          "n_val": 7,
+          "recovered": 1.0,
+          "REC": 0.305,
+          "thr_mbps": 1110.8026755852843,
+          "thr_per_drone_mbps": 5.554013377926444
+        },
+        "3": {
+          "val_loss": 86.23267343001706,
+          "n_val": 7,
+          "recovered": 1.0,
+          "REC": 0.275,
+          "thr_mbps": 933.6120401337793,
+          "thr_per_drone_mbps": 4.668060200668874
+        },
+        "4": {
+          "val_loss": 85.8040963656136,
+          "n_val": 7,
+          "recovered": 1.0,
+          "REC": 0.0025,
+          "thr_mbps": 1208.628762541806,
+          "thr_per_drone_mbps": 6.0431438127090304
+        }
+      }
+    },
+    {
+      "lr": 0.0002,
+      "hidden": 512,
+      "layers": 8,
+      "wd": 0.0,
+      "dropout": 0.0,
+      "max_epochs": 5,
+      "val_frac": 0.0,
+      "fit_val_loss_mean": 86.3221420926707,
+      "fit_val_loss_median": 86.222014605999,
+      "fit_recovery_mean": 0.8,
+      "fit_rec_mean": 0.4225,
+      "fit_thr_mbps_mean": 996.8428093645485,
+      "per_seed_fit": {
+        "0": {
+          "val_loss": 86.00399053096771,
+          "n_val": 7,
+          "recovered": 1.0,
+          "REC": 0.1275,
+          "thr_mbps": 958.9966555183946,
+          "thr_per_drone_mbps": 4.794983277591969
+        },
+        "1": {
+          "val_loss": 86.222014605999,
+          "n_val": 7,
+          "recovered": 1.0,
+          "REC": 0.455,
+          "thr_mbps": 1001.1371237458194,
+          "thr_per_drone_mbps": 5.005685618729122
+        },
+        "2": {
+          "val_loss": 86.76907214948109,
+          "n_val": 7,
+          "recovered": 0.0,
+          "REC": 1.0,
+          "thr_mbps": 963.5117056856187,
+          "thr_per_drone_mbps": 4.817558528428082
+        },
+        "3": {
+          "val_loss": 86.77123523184231,
+          "n_val": 7,
+          "recovered": 1.0,
+          "REC": 0.5275,
+          "thr_mbps": 943.3444816053511,
+          "thr_per_drone_mbps": 4.716722408026753
+        },
+        "4": {
+          "val_loss": 85.84439794506345,
+          "n_val": 7,
+          "recovered": 1.0,
+          "REC": 0.0025,
+          "thr_mbps": 1117.2240802675585,
+          "thr_per_drone_mbps": 5.5861204013378085
+        }
+      }
+    },
+    {
+      "lr": 0.0002,
+      "hidden": 512,
+      "layers": 8,
+      "wd": 1e-05,
+      "dropout": 0.0,
+      "max_epochs": 5,
+      "val_frac": 0.0,
+      "fit_val_loss_mean": 86.25400188735554,
+      "fit_val_loss_median": 86.27721761805671,
+      "fit_recovery_mean": 0.8,
+      "fit_rec_mean": 0.35750000000000004,
+      "fit_thr_mbps_mean": 1021.5451505016723,
+      "per_seed_fit": {
+        "0": {
+          "val_loss": 85.9168138887201,
+          "n_val": 7,
+          "recovered": 1.0,
+          "REC": 0.1275,
+          "thr_mbps": 934.8160535117057,
+          "thr_per_drone_mbps": 4.674080267558534
+        },
+        "1": {
+          "val_loss": 86.45946878194809,
+          "n_val": 7,
+          "recovered": 1.0,
+          "REC": 0.3475,
+          "thr_mbps": 1012.6755852842809,
+          "thr_per_drone_mbps": 5.063377926421409
+        },
+        "2": {
+          "val_loss": 86.76817559344428,
+          "n_val": 7,
+          "recovered": 0.0,
+          "REC": 1.0,
+          "thr_mbps": 975.4515050167224,
+          "thr_per_drone_mbps": 4.877257525083614
+        },
+        "3": {
+          "val_loss": 86.27721761805671,
+          "n_val": 7,
+          "recovered": 1.0,
+          "REC": 0.31,
+          "thr_mbps": 1010.9698996655518,
+          "thr_per_drone_mbps": 5.054849498327738
+        },
+        "4": {
+          "val_loss": 85.84833355460849,
+          "n_val": 7,
+          "recovered": 1.0,
+          "REC": 0.0025,
+          "thr_mbps": 1173.8127090301002,
+          "thr_per_drone_mbps": 5.869063545150498
+        }
+      }
+    },
+    {
+      "lr": 0.0002,
+      "hidden": 512,
+      "layers": 8,
+      "wd": 0.0001,
+      "dropout": 0.0,
+      "max_epochs": 5,
+      "val_frac": 0.0,
+      "fit_val_loss_mean": 86.30512864249093,
+      "fit_val_loss_median": 86.26725674527032,
+      "fit_recovery_mean": 0.8,
+      "fit_rec_mean": 0.3615,
+      "fit_thr_mbps_mean": 996.8428093645485,
+      "per_seed_fit": {
+        "0": {
+          "val_loss": 85.99511556540217,
+          "n_val": 7,
+          "recovered": 1.0,
+          "REC": 0.1275,
+          "thr_mbps": 925.9866220735786,
+          "thr_per_drone_mbps": 4.62993311036789
+        },
+        "1": {
+          "val_loss": 86.63286644220352,
+          "n_val": 7,
+          "recovered": 1.0,
+          "REC": 0.28,
+          "thr_mbps": 921.0702341137123,
+          "thr_per_drone_mbps": 4.605351170568549
+        },
+        "2": {
+          "val_loss": 86.78455776827676,
+          "n_val": 7,
+          "recovered": 0.0,
+          "REC": 1.0,
+          "thr_mbps": 999.3311036789298,
+          "thr_per_drone_mbps": 4.996655518394648
+        },
+        "3": {
+          "val_loss": 86.26725674527032,
+          "n_val": 7,
+          "recovered": 1.0,
+          "REC": 0.3975,
+          "thr_mbps": 1036.7558528428094,
+          "thr_per_drone_mbps": 5.183779264214051
+        },
+        "4": {
+          "val_loss": 85.84584669130189,
+          "n_val": 7,
+          "recovered": 1.0,
+          "REC": 0.0025,
+          "thr_mbps": 1101.0702341137123,
+          "thr_per_drone_mbps": 5.5053511705685505
+        }
+      }
+    },
+    {
+      "lr": 0.0005,
+      "hidden": 512,
+      "layers": 8,
+      "wd": 0.0,
+      "dropout": 0.0,
+      "max_epochs": 5,
+      "val_frac": 0.0,
+      "fit_val_loss_mean": 87.07200053121362,
+      "fit_val_loss_median": 86.57575575794492,
+      "fit_recovery_mean": 0.4,
+      "fit_rec_mean": 0.6355,
+      "fit_thr_mbps_mean": 1094.9096989966554,
+      "per_seed_fit": {
+        "0": {
+          "val_loss": 86.57575575794492,
+          "n_val": 7,
+          "recovered": 0.0,
+          "REC": 1.0,
+          "thr_mbps": 911.0367892976589,
+          "thr_per_drone_mbps": 4.5551839464882855
+        },
+        "1": {
+          "val_loss": 86.34373240811485,
+          "n_val": 7,
+          "recovered": 1.0,
+          "REC": 0.175,
+          "thr_mbps": 1051.505016722408,
+          "thr_per_drone_mbps": 5.2575250836120375
+        },
+        "2": {
+          "val_loss": 89.20302282060895,
+          "n_val": 7,
+          "recovered": 0.0,
+          "REC": 1.0,
+          "thr_mbps": 1231.304347826087,
+          "thr_per_drone_mbps": 6.156521739130432
+        },
+        "3": {
+          "val_loss": 87.38193919190338,
+          "n_val": 7,
+          "recovered": 0.0,
+          "REC": 1.0,
+          "thr_mbps": 908.2274247491639,
+          "thr_per_drone_mbps": 4.541137123745823
+        },
+        "4": {
+          "val_loss": 85.855552477496,
+          "n_val": 7,
+          "recovered": 1.0,
+          "REC": 0.0025,
+          "thr_mbps": 1372.4749163879599,
+          "thr_per_drone_mbps": 6.862374581939796
+        }
+      }
+    },
+    {
+      "lr": 0.0005,
+      "hidden": 512,
+      "layers": 8,
+      "wd": 1e-05,
+      "dropout": 0.0,
+      "max_epochs": 5,
+      "val_frac": 0.0,
+      "fit_val_loss_mean": 87.16499738139765,
+      "fit_val_loss_median": 86.67102788814476,
+      "fit_recovery_mean": 0.6,
+      "fit_rec_mean": 0.5814999999999999,
+      "fit_thr_mbps_mean": 1005.0301003344481,
+      "per_seed_fit": {
+        "0": {
+          "val_loss": 87.4793044413839,
+          "n_val": 7,
+          "recovered": 0.0,
+          "REC": 1.0,
+          "thr_mbps": 974.9498327759197,
+          "thr_per_drone_mbps": 4.874749163879606
+        },
+        "1": {
+          "val_loss": 86.52311185428074,
+          "n_val": 7,
+          "recovered": 1.0,
+          "REC": 0.1725,
+          "thr_mbps": 1010.7692307692307,
+          "thr_per_drone_mbps": 5.053846153846152
+        },
+        "2": {
+          "val_loss": 89.24248065267291,
+          "n_val": 7,
+          "recovered": 0.0,
+          "REC": 1.0,
+          "thr_mbps": 1236.3210702341137,
+          "thr_per_drone_mbps": 6.18160535117055
+        },
+        "3": {
+          "val_loss": 86.67102788814476,
+          "n_val": 7,
+          "recovered": 1.0,
+          "REC": 0.7325,
+          "thr_mbps": 818.0267558528428,
+          "thr_per_drone_mbps": 4.090133779264216
+        },
+        "4": {
+          "val_loss": 85.90906207050595,
+          "n_val": 7,
+          "recovered": 1.0,
+          "REC": 0.0025,
+          "thr_mbps": 985.0836120401337,
+          "thr_per_drone_mbps": 4.925418060200666
+        }
+      }
+    },
+    {
+      "lr": 0.0005,
+      "hidden": 512,
+      "layers": 8,
+      "wd": 0.0001,
+      "dropout": 0.0,
+      "max_epochs": 5,
+      "val_frac": 0.0,
+      "fit_val_loss_mean": 87.17510615672384,
+      "fit_val_loss_median": 86.91713535785675,
+      "fit_recovery_mean": 0.6,
+      "fit_rec_mean": 0.587,
+      "fit_thr_mbps_mean": 1017.6722408026757,
+      "per_seed_fit": {
+        "0": {
+          "val_loss": 86.91699664933341,
+          "n_val": 7,
+          "recovered": 0.0,
+          "REC": 1.0,
+          "thr_mbps": 984.0802675585285,
+          "thr_per_drone_mbps": 4.92040133779264
+        },
+        "1": {
+          "val_loss": 86.91713535785675,
+          "n_val": 7,
+          "recovered": 1.0,
+          "REC": 0.2275,
+          "thr_mbps": 1037.3578595317726,
+          "thr_per_drone_mbps": 5.186789297658868
+        },
+        "2": {
+          "val_loss": 89.21906791414533,
+          "n_val": 7,
+          "recovered": 0.0,
+          "REC": 1.0,
+          "thr_mbps": 1231.304347826087,
+          "thr_per_drone_mbps": 6.1565217391304365
+        },
+        "3": {
+          "val_loss": 86.95963943430355,
+          "n_val": 7,
+          "recovered": 1.0,
+          "REC": 0.705,
+          "thr_mbps": 907.2240802675585,
+          "thr_per_drone_mbps": 4.536120401337778
+        },
+        "4": {
+          "val_loss": 85.86269142798015,
+          "n_val": 7,
+          "recovered": 1.0,
+          "REC": 0.0025,
+          "thr_mbps": 928.3946488294314,
+          "thr_per_drone_mbps": 4.641973244147155
+        }
+      }
+    }
+  ],
+  "chosen_cfg": {
+    "lr": 0.0001,
+    "hidden": 512,
+    "layers": 8,
+    "wd": 0.0,
+    "dropout": 0.0,
+    "max_epochs": 5,
+    "val_frac": 0.0
+  },
+  "chosen_fit_seeds_0_4": {
+    "lr": 0.0001,
+    "hidden": 512,
+    "layers": 8,
+    "wd": 0.0,
+    "dropout": 0.0,
+    "max_epochs": 5,
+    "val_frac": 0.0,
+    "fit_val_loss_mean": 86.22978038106645,
+    "fit_val_loss_median": 86.34403171709606,
+    "fit_recovery_mean": 1.0,
+    "fit_rec_mean": 0.271,
+    "fit_thr_mbps_mean": 989.3979933110368
+  },
+  "heldout_seeds_5_9": {
+    "chosen": {
+      "val_loss_mean": 86.67816515905517,
+      "val_loss_median": 86.51172863585609,
+      "recovery_mean": 0.8,
+      "rec_mean": 0.3815,
+      "thr_mbps_mean": 853.6454849498328,
+      "per_seed": {
+        "5": {
+          "val_loss": 86.54307668549674,
+          "n_val": 7,
+          "recovered": 1.0,
+          "REC": 0.4,
+          "thr_mbps": 746.7892976588629,
+          "thr_per_drone_mbps": 3.733946488294316
+        },
+        "6": {
+          "val_loss": 85.87857504401889,
+          "n_val": 7,
+          "recovered": 1.0,
+          "REC": 0.0025,
+          "thr_mbps": 868.5953177257525,
+          "thr_per_drone_mbps": 4.342976588628752
+        },
+        "7": {
+          "val_loss": 85.87639929992812,
+          "n_val": 7,
+          "recovered": 1.0,
+          "REC": 0.0025,
+          "thr_mbps": 752.1070234113712,
+          "thr_per_drone_mbps": 3.760535117056859
+        },
+        "8": {
+          "val_loss": 86.51172863585609,
+          "n_val": 7,
+          "recovered": 1.0,
+          "REC": 0.5025,
+          "thr_mbps": 841.1036789297659,
+          "thr_per_drone_mbps": 4.205518394648853
+        },
+        "9": {
+          "val_loss": 88.581046129976,
+          "n_val": 7,
+          "recovered": 0.0,
+          "REC": 1.0,
+          "thr_mbps": 1059.6321070234114,
+          "thr_per_drone_mbps": 5.298160535117078
+        }
+      }
+    },
+    "baseline": {
+      "val_loss_mean": 86.67816515905517,
+      "val_loss_median": 86.51172863585609,
+      "recovery_mean": 0.8,
+      "rec_mean": 0.3815,
+      "thr_mbps_mean": 853.6454849498328,
+      "per_seed": {
+        "5": {
+          "val_loss": 86.54307668549674,
+          "n_val": 7,
+          "recovered": 1.0,
+          "REC": 0.4,
+          "thr_mbps": 746.7892976588629,
+          "thr_per_drone_mbps": 3.733946488294316
+        },
+        "6": {
+          "val_loss": 85.87857504401889,
+          "n_val": 7,
+          "recovered": 1.0,
+          "REC": 0.0025,
+          "thr_mbps": 868.5953177257525,
+          "thr_per_drone_mbps": 4.342976588628752
+        },
+        "7": {
+          "val_loss": 85.87639929992812,
+          "n_val": 7,
+          "recovered": 1.0,
+          "REC": 0.0025,
+          "thr_mbps": 752.1070234113712,
+          "thr_per_drone_mbps": 3.760535117056859
+        },
+        "8": {
+          "val_loss": 86.51172863585609,
+          "n_val": 7,
+          "recovered": 1.0,
+          "REC": 0.5025,
+          "thr_mbps": 841.1036789297659,
+          "thr_per_drone_mbps": 4.205518394648853
+        },
+        "9": {
+          "val_loss": 88.581046129976,
+          "n_val": 7,
+          "recovered": 0.0,
+          "REC": 1.0,
+          "thr_mbps": 1059.6321070234114,
+          "thr_per_drone_mbps": 5.298160535117078
+        }
+      }
+    }
+  }
+}

@@ -1,0 +1,17 @@
+{
+  "principal": "principal_baseline_512x8",
+  "refined_equals_baseline": true,
+  "feed": {
+    "tag": "feed_refined_equals_baseline",
+    "cosine_similarity": 1.0,
+    "cosine_distance": 0.0,
+    "l2_distance": 0.0
+  },
+  "feed_trap_negative_control": {
+    "tag": "feed_trap_negative_control_trial75_128x6",
+    "cosine_similarity": 0.8015904532308037,
+    "cosine_distance": 0.1984095467691963,
+    "l2_distance": 8.947005873826035
+  },
+  "interpretation": "The principal (baseline 512x8) and the trap negative control (trial-75 128x6, guardrail-FAIL network) sit at cosine distance 0.198 and L2 8.95 in the 57-dim canonical space: clearly separated regions despite sharing the same architecture family and loss. The refined fine-tune converged back onto the baseline itself (distance 0.0), so the principal-vs-feed comparison that matters is principal vs trap: the surrogate-optimal network is ~20% of a unit sphere away from the system-optimal one, and the val-loss gradient points toward that distant region, not toward the baseline. This quantifies, in weight space, why surrogate-level HPO cannot walk from the trap back to the baseline and why the guardrail, not the surrogate, must remain the adoption criterion."
+}

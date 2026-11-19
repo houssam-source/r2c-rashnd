@@ -1,0 +1,20 @@
+# HPO config — IST Chebyshev GCN (r2c/ist.py). Frozen pipeline around it.
+study_name: ist-gcn-hpo
+sampler: TPESeeded            # optuna.samplers.TPESampler, seed=42
+n_trials: 100                 # hard cap; trial 0 = frozen baseline
+cv_folds: 10                  # paired seeds 0-9 (guardrail pool)
+guardrail_seeds: 20           # seeds 0-19, failures=0.5, constant jammer, v2
+guardrail_regression_tol: 0.02
+inner_objective: median_val_loss_over_folds   # NEVER downstream recovery
+secondary_logged: [recovery, REC, thr_mbps]
+early_stopping: {patience: 20, monitor: val_loss}   # fixed, not searched
+determinism: {torch_threads: 1, seed: 42}
+search_space:
+  lr:            {type: loguniform, low: 1.0e-5, high: 5.0e-3, baseline: 1.0e-4}
+  hidden_dim:    {type: categorical, choices: [128, 256, 512, 768], baseline: 512}
+  cheb_layers:   {type: categorical, choices: [4, 6, 8, 10], baseline: 8}
+  weight_decay:  {type: loguniform, low: 1.0e-6, high: 1.0e-2, baseline: 0.0}
+  dropout:       {type: categorical, choices: [0.0, 0.1, 0.2], baseline: 0.0}
+  max_epochs:    {type: categorical, choices: [5, 20, 40], baseline: 5}
+  val_frac:      {type: categorical, choices: [0.0, 0.2], baseline: 0.0}
+fine_tune: {inits: 3, init_seeds: [1000, 1001, 1002], seed_std_flag: 0.01}

@@ -73,7 +73,9 @@ class FirstOrderChebLayer(nn.Module):
 
 
 class ChebNet(nn.Module):
-    """8 first-order layers, d=3 -> 512; per-subnetwork tanh translation."""
+    """8 first-order layers, d=3 -> 512; per-subnetwork tanh translation.
+    Dropout (HPO knob) sits before the MLP head; default 0.0 reproduces the
+    frozen baseline architecture exactly."""
 
     def __init__(self, p: R2CParams, in_dim: int = 3):
         super().__init__()
@@ -82,6 +84,7 @@ class ChebNet(nn.Module):
         self.convs = nn.ModuleList(
             FirstOrderChebLayer(dims[i], dims[i + 1])
             for i in range(p.gcn_layers))
+        self.dropout = float(getattr(p, "gcn_dropout", 0.0))
         self.head = nn.Sequential(
             nn.Linear(h, 64), nn.Tanh(), nn.Linear(64, 2), nn.Tanh())
         self.n_layers = p.gcn_layers
@@ -93,8 +96,16 @@ class ChebNet(nn.Module):
         for k in range(n_parts):
             mask = labels == k
             pooled = x[mask].mean(dim=0)          # average-pool per subnetwork
+            if self.dropout > 0.0:
+                pooled = torch.nn.functional.dropout(
+                    pooled, p=self.dropout, training=self.training)
             deltas.append(self.head(pooled))
         return torch.stack(deltas)                # (n_parts, 2) in (-1,1)^2
+
+
+def _env_float(name: str, default: float) -> float:
+    v = os.environ.get(name)
+    return float(v) if v is not None else default
 
 
 class IST:
@@ -104,8 +115,21 @@ class IST:
         torch.manual_seed(p.seed)
         self.device = _pick_device()
         _maybe_enable_tf32(self.device)
+        # HPO overrides (training-loop knobs; absent env -> frozen defaults)
+        p.lr = _env_float("R2C_IST_LR", p.lr)
+        p.gcn_hidden = int(_env_float("R2C_IST_HIDDEN", p.gcn_hidden))
+        p.gcn_layers = int(_env_float("R2C_IST_LAYERS", p.gcn_layers))
         self.model = ChebNet(p).to(self.device)
-        self.opt = torch.optim.Adam(self.model.parameters(), lr=p.lr)
+        init_path = os.environ.get("R2C_IST_INIT_WEIGHTS")
+        if init_path:
+            self.model.load_state_dict(torch.load(
+                init_path, map_location=self.device))
+        self.opt = torch.optim.Adam(
+            self.model.parameters(), lr=p.lr,
+            weight_decay=_env_float("R2C_IST_WD", 0.0))
+        self.patience = int(_env_float("R2C_IST_PATIENCE", 20))
+        self.val_frac = _env_float("R2C_IST_VAL_FRAC", 0.0)
+        self.max_epochs = int(_env_float("R2C_IST_MAX_EPOCHS", 5))
         self.top_m = getattr(p, "top_m", 3)
         # graph cache: train_step() and the translation() call that always
         # follows it in the controllers use identical (pos, active[, adj]).
@@ -215,6 +239,56 @@ class IST:
 
     # ---- public API -------------------------------------------------------
 
+    def _split_parts(self, labels: np.ndarray, active: np.ndarray,
+                     n_parts: int):
+        """Deterministic train/val part split for early stopping
+        (val_frac of parts, at least one val part when >= 2 parts)."""
+        if self.val_frac <= 0.0 or n_parts < 2:
+            return None
+        n_val = max(1, int(round(self.val_frac * n_parts)))
+        n_val = min(n_val, n_parts - 1)
+        if n_val < 1:
+            return None
+        g = np.random.RandomState(self.p.seed + int(labels[active][0])
+                                  + n_parts)
+        perm = g.permutation(n_parts)
+        return np.sort(perm[:n_val])      # val part ids
+
+    def _masked_loss(self, pos_t, deltas, labels, active_t, n_parts,
+                     train_parts, val_parts):
+        """L_conn/L_time/L_move restricted to a part subset; positions of
+        the other parts are held fixed (their deltas are not applied)."""
+        p = self.p
+        part_of = torch.tensor(
+            [labels[i] if labels[i] < n_parts else 0 for i in range(len(labels))],
+            device=pos_t.device)
+        full = deltas[part_of]
+        shift = torch.zeros_like(pos_t)
+        keep = torch.zeros(len(labels), dtype=torch.bool, device=pos_t.device)
+        for k in (val_parts if val_parts is not None else range(n_parts)):
+            keep |= torch.tensor(labels == k, device=pos_t.device)
+        if val_parts is not None:
+            keep = ~keep                     # shift only NON-val parts
+            shift[keep] = full[keep] * p.v_max * p.T_ist
+        else:
+            shift = full * p.v_max * p.T_ist
+        pred = pos_t + shift
+        dist = torch.cdist(pred, pred)
+        a = torch.sigmoid((p.r_c - dist) / 5.0)
+        a = a * (1.0 - torch.eye(len(a), device=pos_t.device))
+        a = a * active_t[:, None] * active_t[None, :]
+        deg = a.sum(1)
+        lap = torch.diag(deg) - a
+        lap = 0.5 * (lap + lap.T) + 1e-6 * torch.eye(len(a), device=pos_t.device)
+        evals = torch.linalg.eigvalsh(lap)
+        l_conn = torch.sigmoid((1e-2 - evals) / 5e-4).sum() - 1.0
+        sel = torch.tensor(train_parts, device=pos_t.device)
+        mag = deltas.norm(dim=1)[sel]
+        l_time = mag.max() / p.v_max
+        l_move = mag.mean()
+        over = torch.relu(pred - p.area).sum() + torch.relu(-pred).sum()
+        return l_conn + l_time + l_move + 1e-3 * over
+
     def train_step(self, pos: np.ndarray, active: np.ndarray, epochs: int = 5,
                    adj_override: np.ndarray | None = None) -> float:
         self.model.train()
@@ -227,18 +301,52 @@ class IST:
             return 0.0   # total fleet loss: nothing to train
         lnorm = lnorm.to(dev)
         x = self._features(pos, active).to(dev)
-        loss = None
+        val_ids = self._split_parts(labels, active, n_parts)
+        epochs = max(epochs, self.max_epochs) if self.max_epochs > 5             else epochs
+        if val_ids is None:
+            # frozen baseline path (bit-identical to the original loop)
+            loss = None
+            for _ in range(epochs):
+                deltas = self.model(x, lnorm, torch.tensor(labels, device=dev), n_parts)
+                part_of = torch.tensor(
+                    [labels[i] if labels[i] < n_parts else 0 for i in range(len(pos))],
+                    device=dev)
+                full = deltas[part_of]
+                loss = self._loss(pos_t + full * self.p.v_max * self.p.T_ist,
+                                  deltas, labels, act_t, n_parts)
+                self.opt.zero_grad()
+                loss.backward()
+                self.opt.step()
+            return float(loss.item())
+        # HPO path: train/val part split, best-snapshot restore, early stop
+        train_ids = np.array([k for k in range(n_parts)
+                              if k not in set(val_ids.tolist())])
+        best_state, best_val, since_best = None, float("inf"), 0
+        labels_t = torch.tensor(labels, device=dev)
         for _ in range(epochs):
-            deltas = self.model(x, lnorm, torch.tensor(labels, device=dev), n_parts)
-            part_of = torch.tensor(
-                [labels[i] if labels[i] < n_parts else 0 for i in range(len(pos))],
-                device=dev)
-            full = deltas[part_of]
-            loss = self._loss(pos_t + full * self.p.v_max * self.p.T_ist,
-                              deltas, labels, act_t, n_parts)
+            deltas = self.model(x, lnorm, labels_t, n_parts)
+            loss = self._masked_loss(pos_t, deltas, labels, act_t,
+                                     n_parts, train_ids, val_ids)
             self.opt.zero_grad()
             loss.backward()
             self.opt.step()
+            self.model.eval()
+            with torch.no_grad():
+                vd = self.model(x, lnorm, labels_t, n_parts)
+                vloss = float(self._masked_loss(pos_t, vd, labels, act_t,
+                                                n_parts, val_ids,
+                                                None).item())
+            self.model.train()
+            if vloss < best_val - 1e-6:
+                best_val, since_best = vloss, 0
+                best_state = {k: v.detach().clone()
+                              for k, v in self.model.state_dict().items()}
+            else:
+                since_best += 1
+                if since_best >= self.patience:
+                    break
+        if best_state is not None:
+            self.model.load_state_dict(best_state)
         return float(loss.item())
 
     def translation(self, pos: np.ndarray, active: np.ndarray,

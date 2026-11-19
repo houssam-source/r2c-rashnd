@@ -48,15 +48,33 @@ def trial(p, rf_p, failure_ratio, controller, variant):
                     k, v = kv.split("=")
                     kw[k.strip()] = float(v)
         ctrl = FieldController(p, rf_p, seed=p.seed, **kw)
-    elif controller == "hybrid":
-        ctrl = HybridController(p, rf_p=rf_p, variant=variant)
+    elif controller == "hybrid" or variant.startswith("v3"):
+        kw = {}
+        base = variant
+        if "(" in variant:
+            base = variant.split("(", 1)[0]
+            inner = variant.split("(", 1)[1].split(")")[0]
+            for kv in inner.split(","):
+                if "=" in kv:
+                    k, v = kv.split("=")
+                    kw[k.strip()] = float(v)
+        ctrl = HybridController(p, rf_p=rf_p, variant=base, **kw)
     else:
         ctrl = R2CController(p)
     t_rec, recovered = None, False
     thr_sum, pd_sum, q_sum, steps = 0.0, 0.0, 0.0, 0
+    k_max = 1
+    import scipy.sparse.csgraph as _cg
     for t in range(p.T):
         if t == p.t1:
             env.inject_failures(failure_ratio)
+        if t % p.T_ist == 0 and t > p.t1:
+            d0 = env.distances()
+            a0 = ((d0 <= p.r_c) & env.active[:, None]
+                  & env.active[None, :]).astype(float)
+            np.fill_diagonal(a0, 0.0)
+            k_max = max(k_max, int(
+                _cg.connected_components(a0, directed=False)[0]))
         env.step(ctrl.velocity(env, t))
         if t > p.t1:
             thr_sum += rf.throughput(env.pos, env.active, t)
@@ -74,6 +92,7 @@ def trial(p, rf_p, failure_ratio, controller, variant):
         "recovered": float(recovered),
         "thr_mbps": thr_sum / max(steps, 1),
         "thr_per_drone_mbps": pd_sum / max(steps, 1),
+        "k_max": float(k_max),
         "mean_q": q_sum / max(steps, 1),
         "lambda2_gated": algebraic_connectivity(gadj),
     }
@@ -108,6 +127,8 @@ def main():
     ap.add_argument("--failures", type=float, default=0.5)
     ap.add_argument("--workers", type=int, default=1)
     ap.add_argument("--out", default="results/e4_variants.csv")
+    ap.add_argument("--per-trial", default=None,
+                    help="optional per-trial CSV (budget-curve data)")
     args = ap.parse_args()
 
     tasks = [(c, m, i, args.failures) for m in args.modes
@@ -126,6 +147,18 @@ def main():
             results[idx] = _one(task)
 
     os.makedirs(os.path.dirname(args.out), exist_ok=True)
+    if args.per_trial:
+        with open(args.per_trial, "w", newline="") as f:
+            w = csv.writer(f)
+            keys = ["seed", "jammer", "controller", "failures"]
+            extra = sorted({k for r in results.values()
+                            for k in r if k not in keys})
+            w.writerow(keys + extra)
+            for idx, task in enumerate(tasks):
+                c, mode, i, fails = task
+                r = results[idx]
+                w.writerow([i, mode, c, fails]
+                           + [f"{r[k]:.6f}" for k in extra])
     with open(args.out, "w", newline="") as f:
         w = csv.writer(f)
         w.writerow(["jammer", "controller", "metric", "mean", "std",

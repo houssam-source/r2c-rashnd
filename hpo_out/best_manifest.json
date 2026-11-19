@@ -1,0 +1,40 @@
+{
+  "cfg": {
+    "lr": 0.002611563494591976,
+    "hidden": 128,
+    "layers": 6,
+    "wd": 9.526809052003448e-05,
+    "dropout": 0.2,
+    "max_epochs": 40,
+    "val_frac": 0.2
+  },
+  "cv_median_val_loss": 85.789835,
+  "trial": 75,
+  "guardrail": {
+    "seeds": [
+      0,
+      1,
+      2,
+      3,
+      4,
+      5,
+      6,
+      7,
+      8,
+      9,
+      10,
+      11,
+      12,
+      13,
+      14,
+      15,
+      16,
+      17,
+      18,
+      19
+    ],
+    "baseline_recovery": 0.65,
+    "best_recovery": 0.45,
+    "regression": 0.2,
+    "tolerance": 0.02,
+    "pass": 

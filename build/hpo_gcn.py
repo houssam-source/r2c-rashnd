@@ -220,6 +220,7 @@ def main():
                 values=[med],
                 user_attrs={"cfg": json.dumps(cfg), "baseline": True}))
         else:
+            trial.set_user_attr("cfg", json.dumps(cfg))
             study.tell(trial, med)
         print(f"trial {i}: val={med:.4f} rec={rec:.2f} "
               f"({time.time()-t0:.0f}s)", flush=True)

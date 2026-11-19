@@ -1,0 +1,1 @@
+{"cfg": {"lr": 0.002611563494591976, "hidden": 128, "layers": 6, "wd": 9.526809052003448e-05, "dropout": 0.2, "max_epochs": 40, "val_frac": 0.2}, "median_val_loss": 85.789835, "trial": 75}

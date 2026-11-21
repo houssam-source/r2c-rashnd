@@ -1,0 +1,13 @@
+jammer,controller,metric,mean,std,trials
+constant,v10,REC,0.575250,0.458089,10
+constant,v10,recovered,0.500000,0.500000,10
+constant,v10,thr_mbps,927.090301,141.778433,10
+constant,v10,thr_per_drone_mbps,4.635452,0.708892,10
+constant,v10,k_max,102.300000,1.187434,10
+constant,v10,cov_end,0.944050,0.044005,10
+constant,v10,mean_q,0.906369,0.026761,10
+constant,v10,lambda2_gated,-0.000000,0.000000,10
+constant,v10,sensing_events,261.300000,223.026030,10
+constant,v10,replans,0.000000,0.000000,10
+constant,v10,adoptions,0.000000,0.000000,10
+constant,v10,valve_remeasures,0.000000,0.000000,10

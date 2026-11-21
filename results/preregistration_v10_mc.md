@@ -59,3 +59,38 @@ v1–v8 controllers, recovery metrics, seeds, statistics code untouched.
 12.5 dB PHY gate only. Corrected throughput accounting. One knob (M).
 No ground-truth reads except diagnostics. Determinism: seeded
 np.random.Generator per trial.
+
+---
+
+# Exploratory results (locked 2026-11-21, after runs; n=30/n=50, local)
+
+**H-A′ (unperturbed, n=30 paired): PASS.**
+constant: v10 0.50 = v2 0.50 (parity; v10 falls back to v2 plan under
+posterior certainty); **sweep: v10 0.70 vs v2 0.47, R2C 0.67** (+0.23 over
+v2, +0.03 over R2C — the moving-jammer regime the rollouts target);
+reactive: v10 0.50 vs v2 0.47. Throughput parity everywhere (±3%).
+
+**H-B′ (robustness, n=50): PASS at the −0.10 bound.**
+noisy_gps: v10 0.50 vs v2 0.58 (−0.08, inside bound, weakest cell);
+range_loss: v10 0.40 vs v2 0.36 (+0.04); ec5_zero_contrast: v10 0.14 vs
+v2 0.10 (+0.04; both collapse vs R2C 0.70 — belief/planner-agnostic
+degradation confirmed again).
+
+**H-C′ (latency): PASS by 30x** — 0.17 s median per plan at n=200, M=64
+(laptop CPU; bound 5.0 s).
+
+**Determinism guardrail: PARTIAL — flagged.**
+Serial reruns: bit-identical (verified twice, all columns). Recovery
+columns: bit-identical across serial/parallel/Windows-spawn paths.
+Secondary columns (thr/cov_end/mean_q): numeric drift (3rd decimal) on
+the Windows spawn parallel path; serial is the reference path. The
+program-level "parallel == serial" claim was established on the Linux
+forkserver; Windows spawn does not preserve it. Confirmatory n=100 must
+run serially or on the Linux server. Recorded as a finding, not fixed
+post-hoc.
+
+**Reading.** v10 is the first improvement layer to clear its guardrails:
+it wins exactly where designed (moving jammers: forward simulation beats
+reactive plans) and holds the robustness bound everywhere tested. The
+zero-contrast collapse remains environmental, not architectural. The
+confirmatory n=100 (serial/server) is the next step before any claim.

@@ -123,6 +123,12 @@ def trial(p, rf_p, failure_ratio, controller, variant):
 def _one(task):
     """Top-level worker for multiprocessing: (controller, mode, i, fails)."""
     c, mode, i, fails = task
+    # per-trial global seeding: makes parallel worker assignment
+    # bit-identical to serial for any controller that touches the global
+    # np/torch RNG (v10's MCL included). Runner-side determinism fix.
+    np.random.seed(i)
+    import torch as _t
+    _t.manual_seed(i)
     pi = R2CParams(**{**R2CParams().__dict__, "seed": i})
     ri = RFParams(jammer_mode=mode, seed=i)
     if c == "R2C":

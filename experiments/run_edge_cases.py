@@ -233,6 +233,16 @@ def trial(scenario, controller, seed):
     elif controller == "field":
         from r2c.field import FieldController
         ctrl = FieldController(p, rf_p, seed=p.seed)
+    elif controller.startswith("v10"):
+        from r2c.v10 import MCPlannerController
+        kw = {}
+        if "(" in controller:
+            inner = controller.split("(", 1)[1].split(")")[0]
+            for kv in inner.split(","):
+                if "=" in kv:
+                    k, v = kv.split("=")
+                    kw[k.strip()] = float(v)
+        ctrl = MCPlannerController(p, rf_p=rf_p, seed=p.seed, **kw)
     else:
         ctrl = HybridController(p, rf_p=rf_p, variant=controller)
     rng = np.random.default_rng(seed)

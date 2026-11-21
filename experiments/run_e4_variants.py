@@ -87,13 +87,13 @@ def trial(p, rf_p, failure_ratio, controller, variant):
                 _cg.connected_components(a0, directed=False)[0]))
         env.step(ctrl.velocity(env, t))
         if t > p.t1:
-            thr_sum += rf.throughput(env.pos, env.active, t)
-            pd_sum += rf.last_per_drone_mbps
-            q_sum += rf.mean_quality(env.pos, env.active, t)
+            m = rf.metrics(env.pos, env.active, t)
+            thr_sum += m["thr_mbps"]
+            pd_sum += m["thr_per_drone_mbps"]
+            q_sum += m["mean_q"]
             steps += 1
-            if not recovered and rf.gated_adjacency(
-                    env.pos, env.active, t).size and env.connected() and \
-                    rf.mean_quality(env.pos, env.active, t) > 0.5:
+            if not recovered and m["gated_adj"].size and env.connected() \
+                    and m["mean_q"] > 0.5:
                 t_rec = t - p.t1
                 recovered = True
     gadj = rf.gated_adjacency(env.pos, env.active, p.T - 1)

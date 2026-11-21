@@ -233,6 +233,32 @@ class RFLayer:
         self.last_per_drone_mbps = float(capped_mbps.mean())
         return total_mbps
 
+    def metrics(self, pos: np.ndarray, active: np.ndarray, t: int) -> dict:
+        """One-pass bundle of the per-step metrics: computes the gated
+        adjacency, SINR, and quality ONCE and derives throughput (with
+        the radio cap + guard), per-drone throughput, and mean quality.
+        Bit-identical to calling throughput() + mean_quality()
+        separately (same operations, same order - the repetition is
+        only removed)."""
+        p, rf = self.p, self.rf
+        adj = self.gated_adjacency(pos, active, t)
+        sinr = self.sinr_db(pos, active, t)
+        q = self.quality_map(sinr)
+        link_mbps = rf.bandwidth_mhz * np.log2(1.0 + 10.0 ** (sinr / 10.0))             * q * adj
+        np.fill_diagonal(link_mbps, 0.0)
+        per_drone = link_mbps.sum(axis=1)
+        capped = np.minimum(per_drone, rf.link_cap_mbps)
+        total = float(capped.sum())
+        n_active = int(np.count_nonzero(active))
+        agg_cap = max(n_active, 1) * rf.link_cap_mbps
+        assert total <= agg_cap * 1.01,             (f"impossible throughput: {total:.2f} Mbps > "
+             f"{n_active} x {rf.link_cap_mbps} Mbps")
+        self.last_per_drone_mbps = float(capped.mean())
+        adj_mask = adj > 0
+        mq = float(q[adj_mask].mean()) if adj_mask.any() else 0.0
+        return {"thr_mbps": total, "thr_per_drone_mbps":
+                self.last_per_drone_mbps, "mean_q": mq, "gated_adj": adj}
+
     def mean_quality(self, pos: np.ndarray, active: np.ndarray, t: int) -> float:
         adj_mask = self.gated_adjacency(pos, active, t) > 0
         if not adj_mask.any():

@@ -40,9 +40,10 @@ def one(task):
             env.inject_failures(0.5)
         env.step(ctrl.velocity(env, t))
         if t > p.t1:
-            thr_sum += rf.throughput(env.pos, env.active, t)
-            pd_sum += rf.last_per_drone_mbps
-            q_sum += rf.mean_quality(env.pos, env.active, t)
+            m = rf.metrics(env.pos, env.active, t)
+            thr_sum += m["thr_mbps"]
+            pd_sum += m["thr_per_drone_mbps"]
+            q_sum += m["mean_q"]
             steps += 1
             c_t = coverage(env.pos, env.active, p.r_c, p.area)
             cov_post_sum += c_t

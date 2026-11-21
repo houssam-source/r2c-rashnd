@@ -1,0 +1,61 @@
+{
+  "alphas": [
+    0.0,
+    0.2,
+    0.4,
+    0.6,
+    0.8,
+    1.0
+  ],
+  "seeds": [
+    0,
+    1,
+    2,
+    3,
+    4,
+    5,
+    6,
+    7,
+    8,
+    9
+  ],
+  "curve": [
+    {
+      "alpha": 0.0,
+      "recovery": 0.7,
+      "recovery_std": 0.45825756949558405,
+      "val_loss": 86.41277601676327
+    },
+    {
+      "alpha": 0.2,
+      "recovery": 0.7,
+      "recovery_std": 0.45825756949558405,
+      "val_loss": 86.40839029763427
+    },
+    {
+      "alpha": 0.4,
+      "recovery": 0.8,
+      "recovery_std": 0.4,
+      "val_loss": 86.3395152435771
+    },
+    {
+      "alpha": 0.6,
+      "recovery": 0.8,
+      "recovery_std": 0.4,
+      "val_loss": 86.3395152435771
+    },
+    {
+      "alpha": 0.8,
+      "recovery": 0.7,
+      "recovery_std": 0.45825756949558405,
+      "val_loss": 86.40839029763427
+    },
+    {
+      "alpha": 1.0,
+      "recovery": 0.7,
+      "recovery_std": 0.45825756949558405,
+      "val_loss": 86.41277601676327
+    }
+  ],
+  "endpoints": "ChebNet 512x8 inits seed0/seed1, baseline training, guardrail recovery + val loss"
+}
